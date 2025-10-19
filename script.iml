@@ -1,0 +1,2 @@
+img = load("input.png") |> crop(50, 50, 3000, 3000);
+save("cropped.png", img);
