@@ -2,3 +2,7 @@
 *.exe
 block.stmts[-
 block.n++]
+*.yy.c
+*.tab.h
+*.tab.c
+iml
