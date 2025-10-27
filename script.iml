@@ -1,2 +1,2 @@
-img = load("input.png") |> crop(50, 50, 3000, 3000);
-save("cropped.png", img);
+img = load("input.png") |> blur(5) |> crop(50,50,500,500);
+save("output.png", img);

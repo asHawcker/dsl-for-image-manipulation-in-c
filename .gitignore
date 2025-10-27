@@ -6,3 +6,5 @@ block.n++]
 *.tab.h
 *.tab.c
 iml
+
+.vscode/

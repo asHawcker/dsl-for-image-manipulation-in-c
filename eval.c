@@ -1,7 +1,7 @@
 #include "ast.h"
 #include "runtime.h"
 #include "eval.h"
-#include "stb_image.h"
+#include "include/stb_image.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
