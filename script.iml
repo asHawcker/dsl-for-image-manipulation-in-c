@@ -1,2 +1,2 @@
-img = load("input.png") |> blur(5) |> crop(50,50,500,500);
+img = load("input.png") |> brighten(50,0);
 save("output.png", img);

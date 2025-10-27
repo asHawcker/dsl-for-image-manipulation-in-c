@@ -167,6 +167,113 @@ Image *eval_expr(Ast *expr) {
                 if (!img) {
                     fprintf(stderr, "Error: blur(radius=%d) failed\n", r);
                 }
+            } else if (strcmp(fname, "grayscale") == 0 && nargs == 1) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: grayscale input image is NULL\n");
+                    return NULL;
+                }
+                img = grayscale_image(i);
+                if (!img) {
+                    fprintf(stderr, "Error: grayscale() failed\n");
+                }
+            }
+
+            // Invert (takes 1 argument: image)
+            else if (strcmp(fname, "invert") == 0 && nargs == 1) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: invert input image is NULL\n");
+                    return NULL;
+                }
+                img = invert_image(i);
+                if (!img) {
+                    fprintf(stderr, "Error: invert() failed\n");
+                }
+            }
+
+            // Flip Vertical (takes 1 argument: image)
+            else if (strcmp(fname, "flipX") == 0 && nargs == 1) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: flip_vertical input image is NULL\n");
+                    return NULL;
+                }
+                img = flip_image_along_X(i);
+                if (!img) {
+                    fprintf(stderr, "Error: flip_vertical() failed\n");
+                }
+            } else if (strcmp(fname, "flipY") == 0 && nargs == 1) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: flip_vertical input image is NULL\n");
+                    return NULL;
+                }
+                img = flip_image_along_Y(i);
+                if (!img) {
+                    fprintf(stderr, "Error: flip_vertical() failed\n");
+                }
+            } else if (strcmp(fname, "cannyedge") == 0 && nargs == 4) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: canny input image is NULL\n");
+                    return NULL;
+                }
+                if (expr->call.args[1]->type != AST_NUMBER) {
+                    fprintf(stderr, "Error: canny sigma (arg 2) must be a number\n");
+                    return NULL;
+                }
+                if (expr->call.args[2]->type != AST_NUMBER) {
+                    fprintf(stderr, "Error: canny low_thresh (arg 3) must be a number\n");
+                    return NULL;
+                }
+                if (expr->call.args[3]->type != AST_NUMBER) {
+                    fprintf(stderr, "Error: canny high_thresh (arg 4) must be a number\n");
+                    return NULL;
+                }
+
+                float sigma = (float)expr->call.args[1]->number.num;
+                int low_t_int = (int)expr->call.args[2]->number.num;
+                int high_t_int = (int)expr->call.args[3]->number.num;
+
+                unsigned char low_thresh = (low_t_int < 0) ? 0 : ((low_t_int > 255) ? 255 : (unsigned char)low_t_int);
+                unsigned char high_thresh = (high_t_int < 0) ? 0 : ((high_t_int > 255) ? 255 : (unsigned char)high_t_int);
+
+                img = run_canny(i, sigma, low_thresh, high_thresh);
+                if (!img) {
+                    fprintf(stderr, "Error: canny(sigma=%.2f, low=%d, high=%d) failed\n", 
+                            sigma, low_thresh, high_thresh);
+                }
+            } else if (strcmp(fname, "brighten") == 0 && nargs == 3) {
+                Image *i = eval_expr(expr->call.args[0]);
+                if (!i) {
+                    fprintf(stderr, "Error: brightness input image is NULL\n");
+                    return NULL;
+                }
+                if (expr->call.args[1]->type != AST_NUMBER) {
+                    fprintf(stderr, "Error: brightness bias (arg 2) must be a number\n");
+                    return NULL;
+                }
+                if (expr->call.args[2]->type != AST_NUMBER) {
+                    fprintf(stderr, "Error: brightness direction (arg 3) must be a number (0 for reduce, 1 for increase)\n");
+                    return NULL;
+                }
+
+                // Extract parameters
+                int bias = (int)expr->call.args[1]->number.num;
+                int direction = (int)expr->call.args[2]->number.num;
+
+                // Validate direction
+                if (direction != 0 && direction != 1) {
+                    fprintf(stderr, "Error: brightness direction (arg 3) must be 0 (reduce) or 1 (increase)\n");
+                    return NULL;
+                }
+
+                // Call the function
+                img = adjust_brightness(i, bias, direction);
+                if (!img) {
+                    fprintf(stderr, "Error: brightness(bias=%d, direction=%d) failed\n", bias, direction);
+                }
             }
             return img;
         }
