@@ -15,19 +15,35 @@ void yyerror(const char *s) { fprintf(stderr,"Error: %s\n",s); }
     Ast *ast;
 }
 
-%token <str> IDENT STRING
-%token <num> NUMBER
+/* --- TOKEN DECLARATIONS (CLEANED) --- */
+
+/* Kept <str> IDENT, removed obsolete STRING */
+%token <str> IDENT 
+/* Removed obsolete NUMBER token */
 %token <i> TRUE FALSE
 %token DEF RETURN IF ELSE FOR WHILE BREAK CONTINUE NULLVAL
 %token IMAGE_TYPE INT_TYPE FLOAT_TYPE STRING_TYPE BOOL_TYPE
 %token PIPE_OP
 %token EQ NEQ GT LT GE LE ASSIGN PLUS MINUS MUL DIV MOD
 
+/* Type keywords (from your example) */
+%token INT_TK FLOAT_TK STRING_TK IMAGE_TK
+
+/* New typed literal tokens (from your example) */
+%token <i> INT_LIT
+%token <num> FLOAT_LIT
+%token <str> STR_LIT
+
+/* --- END TOKEN DECLARATIONS --- */
+
+
 %left PIPE_OP  /* Left-associative precedence for pipelines */
 %left ','      /* Left-associative for argument lists */
 %expect 1      /* Expect 1 harmless shift/reduce conflict (comma in lists) */
 
+/* Merged and cleaned %type declarations */
 %type <ast> program stmt_list stmt expr primary_expr assignment call block expr_list expr_list_opt params_list params_list_opt
+%type <ast> type declaration 
 
 %start program
 
@@ -36,6 +52,23 @@ void yyerror(const char *s) { fprintf(stderr,"Error: %s\n",s); }
 program: 
     stmt_list { root = $1; }
     ;
+
+/* This 'type' rule was already present in your file, as requested */
+type:
+    INT_TK   { $$ = make_type_node(TYPE_INT); }
+  | FLOAT_TK { $$ = make_type_node(TYPE_FLOAT); }
+  | STRING_TK{ $$ = make_type_node(TYPE_STRING); }
+  | IMAGE_TK { $$ = make_type_node(TYPE_IMAGE); }
+  ;
+  
+/* --- FIXED RULE --- */
+declaration:
+    type IDENT ASSIGN expr ';' { /* <-- FIXED: Was '=' */
+        $$ = make_decl_node($1, $2, $4);
+    }
+  ;
+/* --- END FIXED RULE --- */
+
 
 stmt_list:
     stmt { 
@@ -62,15 +95,16 @@ stmt_list:
     ;
 
 stmt:
-      assignment ';'       { $$ = $1; }
-    | expr ';'             { $$ = make_expr_stmt($1); }
-    | RETURN expr ';'      { $$ = make_return($2); }
+      declaration { $$ = $1; }  /* <-- ADDED: Allows declarations as statements */
+    | assignment ';'      { $$ = $1; }
+    | expr ';'            { $$ = make_expr_stmt($1); }
+    | RETURN expr ';'     { $$ = make_return($2); }
     | IF '(' expr ')' block ELSE block { $$ = make_if_else($3, $5, $7); }
     | IF '(' expr ')' block { $$ = make_if($3, $5); }
     | WHILE '(' expr ')' block { $$ = make_while($3, $5); }
     | FOR '(' assignment ';' expr ';' assignment ')' block { $$ = make_for($3, $5, $7, $9); }
-    | BREAK ';'             { $$ = make_break(); }
-    | CONTINUE ';'          { $$ = make_continue(); }
+    | BREAK ';'           { $$ = make_break(); }
+    | CONTINUE ';'        { $$ = make_continue(); }
     | DEF IDENT '(' params_list_opt ')' block { 
         char **params = $4 ? $4->arg_list.args : NULL;
         int nparams = $4 ? $4->arg_list.nargs : 0;
@@ -82,17 +116,26 @@ assignment:
     IDENT ASSIGN expr { $$ = make_assign($1, $3); }
     ;
 
+/* --- EXPRESSION RULES (CLEANED) --- */
+
+/* 'expr' is for operators (like pipe) */
 expr:
-    primary_expr { $$ = $1; }
+      primary_expr { $$ = $1; }
     | expr PIPE_OP primary_expr { $$ = make_pipe($1, $3); }
     ;
 
+/* 'primary_expr' is for terminals and calls */
 primary_expr:
-    NUMBER { $$ = make_number($1); }
-    | STRING { $$ = make_string($1); }
-    | IDENT { $$ = make_ident($1); }
-    | call { $$ = $1; }
+      INT_LIT   { $$ = make_int_literal($1); }    /* <-- ADDED from example */
+    | FLOAT_LIT { $$ = make_float_literal($1); }  /* <-- ADDED from example */
+    | STR_LIT   { $$ = make_string_literal($1); }  /* <-- ADDED from example */
+    | IDENT     { $$ = make_ident($1); }     /* <-- FIXED: was make_ident_node */
+    | call      { $$ = $1; }
+    /* Removed obsolete NUMBER and STRING rules */
     ;
+
+/* --- END EXPRESSION RULES --- */
+
 
 call:
     IDENT '(' expr_list_opt ')' { 

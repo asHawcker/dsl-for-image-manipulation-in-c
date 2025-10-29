@@ -3,6 +3,56 @@
 #include <stdio.h>
 #include <string.h>
 
+/* --- NEW CONSTRUCTORS --- */
+
+Ast *make_int_literal(int v) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_INT_LIT;
+    ast->type2 = TYPE_INT;
+    ast->ival = v;
+    return ast;
+}
+
+Ast *make_float_literal(double v) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_FLOAT_LIT;
+    ast->type2 = TYPE_FLOAT;
+    ast->fval = v;
+    return ast;
+}
+
+Ast *make_string_literal(const char *s) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_STRING_LIT;
+    ast->type2 = TYPE_STRING;
+    ast->sval = strdup(s);
+    return ast;
+}
+
+Ast *make_type_node(TypeId t) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_TYPE;
+    ast->type2 = t;
+    return ast;
+}
+
+Ast *make_decl_node(Ast *type_node, char *name, Ast *expr) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_DECL;
+    ast->type2 = type_node->type2; // Propagate the type from the type node
+    ast->decl.type_node = type_node;
+    ast->decl.name = strdup(name);
+    ast->decl.expr = expr;
+    return ast;
+}
+
+/* --- EXISTING CONSTRUCTORS --- */
+
 Ast *make_assign(char *name, Ast *expr) {
     Ast *ast = malloc(sizeof(Ast));
     if (!ast) return NULL;
@@ -170,7 +220,29 @@ Ast *clone_ast(Ast *ast) {
     Ast *new_ast = malloc(sizeof(Ast));
     if (!new_ast) return NULL;
     new_ast->type = ast->type;
+    new_ast->type2 = ast->type2; // <-- Copy type information
+    
     switch (ast->type) {
+        /* --- NEW CASES --- */
+        case AST_INT_LIT:
+            new_ast->ival = ast->ival;
+            break;
+        case AST_FLOAT_LIT:
+            new_ast->fval = ast->fval;
+            break;
+        case AST_STRING_LIT:
+            new_ast->sval = strdup(ast->sval);
+            break;
+        case AST_TYPE:
+            // type2 already copied
+            break;
+        case AST_DECL:
+            new_ast->decl.type_node = clone_ast(ast->decl.type_node);
+            new_ast->decl.name = strdup(ast->decl.name);
+            new_ast->decl.expr = clone_ast(ast->decl.expr);
+            break;
+
+        /* --- EXISTING CASES --- */
         case AST_NUMBER:
             new_ast->number.num = ast->number.num;
             break;
@@ -275,6 +347,23 @@ Ast *clone_ast(Ast *ast) {
 void free_ast(Ast *ast) {
     if (!ast) return;
     switch(ast->type){
+        /* --- NEW CASES --- */
+        case AST_INT_LIT:
+            break; // No heap memory
+        case AST_FLOAT_LIT:
+            break; // No heap memory
+        case AST_STRING_LIT:
+            free(ast->sval);
+            break;
+        case AST_TYPE:
+            break; // No heap memory
+        case AST_DECL:
+            free_ast(ast->decl.type_node);
+            free(ast->decl.name);
+            free_ast(ast->decl.expr);
+            break;
+
+        /* --- EXISTING CASES --- */
         case AST_ASSIGN: 
             free(ast->assign.name); 
             free_ast(ast->assign.expr); 
@@ -349,6 +438,33 @@ void dump_ast(Ast *ast, int indent) {
     if (!ast) return;
     for(int i=0;i<indent;i++) printf("  ");
     switch(ast->type){
+        /* --- NEW CASES --- */
+        case AST_INT_LIT:
+            printf("Int: %d\n", ast->ival);
+            break;
+        case AST_FLOAT_LIT:
+            printf("Float: %lf\n", ast->fval);
+            break;
+        case AST_STRING_LIT:
+            printf("String: \"%s\"\n", ast->sval);
+            break;
+        case AST_TYPE:
+            printf("Type: ");
+            switch(ast->type2) {
+                case TYPE_INT: printf("int\n"); break;
+                case TYPE_FLOAT: printf("float\n"); break;
+                case TYPE_STRING: printf("string\n"); break;
+                case TYPE_IMAGE: printf("image\n"); break;
+                default: printf("unknown\n"); break;
+            }
+            break;
+        case AST_DECL:
+            printf("Decl: %s\n", ast->decl.name);
+            dump_ast(ast->decl.type_node, indent+1);
+            dump_ast(ast->decl.expr, indent+1);
+            break;
+
+        /* --- EXISTING CASES --- */
         case AST_ASSIGN: 
             printf("Assign: %s\n", ast->assign.name); 
             dump_ast(ast->assign.expr, indent+1); 

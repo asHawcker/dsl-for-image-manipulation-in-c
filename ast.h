@@ -1,6 +1,14 @@
 #ifndef AST_H
 #define AST_H
 
+typedef enum { 
+    TYPE_INT, 
+    TYPE_FLOAT, 
+    TYPE_STRING, 
+    TYPE_IMAGE, 
+    TYPE_UNKNOWN 
+} TypeId;
+
 typedef enum {
     AST_ASSIGN,
     AST_EXPR_STMT,
@@ -18,12 +26,22 @@ typedef enum {
     AST_ARG_LIST,
     AST_NUMBER,
     AST_STRING,
-    AST_IDENT
+    AST_IDENT,
+    AST_INT_LIT, 
+    AST_FLOAT_LIT, 
+    AST_STRING_LIT, 
+    AST_DECL, 
+    AST_TYPE,
 } AstType;
 
 typedef struct Ast {
     AstType type;
+    TypeId type2;
     union {
+        int ival;
+        double fval;
+        char *sval;
+        struct { struct Ast *type_node; char *name; struct Ast *expr; } decl;
         struct { char *name; struct Ast *expr; } assign;
         struct { struct Ast *expr; } expr_stmt;
         struct { char *name; struct Ast **args; int nargs; } call;
@@ -41,6 +59,12 @@ typedef struct Ast {
         struct { char *str; } ident;
     };
 } Ast;
+
+Ast *make_int_literal(int v);
+Ast *make_float_literal(double v);
+Ast *make_string_literal(const char *s);
+Ast *make_type_node(TypeId t);
+Ast *make_decl_node(Ast *type_node, char *name, Ast *expr);
 
 // Constructors
 Ast *make_assign(char *name, Ast *expr);
