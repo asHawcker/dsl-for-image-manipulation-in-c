@@ -1,6 +1,6 @@
 #include "ast.h"
 #include "runtime.h"
-#include "eval.h"
+#include "eval.h" // <-- This header will have env_shutdown()
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +31,14 @@ int main(int argc, char **argv) {
 
     if (dump) dump_ast(root, 0);
 
+    // No runtime_init() is needed as globals start as NULL
+    
     eval_program(root);
+
+    // --- ADDED SHUTDOWN ---
+    // Clean up the global environment and free any remaining Values
+    env_shutdown(); 
+    // --- END ADDED SHUTDOWN ---
 
     free_ast(root);
     return 0;
