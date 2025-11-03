@@ -172,6 +172,55 @@ int is_truthy(Value v) {
         case V_NONE:
         default: return 0;
     }
+Image *copy_image(Image *img) {
+    if (!img) {
+        runtime_error("copy_image: received NULL image");
+        return NULL;
+    }
+    if (!img->data) {
+         runtime_error("copy_image: received image with NULL data");
+         return NULL;
+    }
+    Image *new_img = malloc(sizeof(Image));
+    if (!new_img) {
+        runtime_error("copy_image: failed to allocate new Image struct");
+        return NULL;
+    }
+    new_img->width = img->width;
+    new_img->height = img->height;
+    new_img->channels = img->channels;
+    size_t data_size = (size_t)img->width * img->height * img->channels;
+    if (data_size == 0) {
+        runtime_error("copy_image: image has zero size");
+        free(new_img);
+        return NULL;
+    }
+    new_img->data = malloc(data_size);
+    if (!new_img->data) {
+        runtime_error("copy_image: failed to allocate new image data");
+        free(new_img);
+        return NULL;
+    }
+    memcpy(new_img->data, img->data, data_size);
+    return new_img;
+}
+
+Value value_clone(Value val) {
+    if (val.tag == V_STRING) {
+        Value new_val;
+        new_val.tag = V_STRING;
+        new_val.u.sval = strdup(val.u.sval);
+        if (!new_val.u.sval) runtime_error("Failed to clone string");
+        return new_val;
+    }
+    if (val.tag == V_IMAGE) {
+        Value new_val;
+        new_val.tag = V_IMAGE;
+        new_val.u.img = copy_image(val.u.img);
+        if (!new_val.u.img) runtime_error("Failed to clone image");
+        return new_val;
+    }
+    return val;
 }
 
 // --- END HELPERS ---
@@ -180,8 +229,8 @@ int is_truthy(Value v) {
 // Central function to dispatch builtin calls.
 // It *consumes* (frees) all arguments in the 'args' array, unless specified.
 Value eval_builtin_call(const char *fname, Value *args, int nargs) {
-    // ... (this function is unchanged from your last correct version) ...
-    Value result = val_none(); 
+    Value result = val_none(); // Default return
+    int free_args = 1;
 
     if (strcmp(fname, "load") == 0) {
         if (nargs != 1) runtime_error("load() expects 1 argument, got %d", nargs);
@@ -197,9 +246,9 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         Image *img = value_to_image(args[1]);
         save_image(path, img);
         
-        // Return the image so save can be used in pipelines
-        result.tag = V_IMAGE;
-        result.u.img = img;
+        free_value(args[0]);
+        free_args = 0;
+        
     }
     else if (strcmp(fname, "crop") == 0) {
         if (nargs != 5) runtime_error("crop() expects 5 arguments, got %d", nargs);
@@ -238,6 +287,170 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         if (!out_img) runtime_error("invert() failed");
         result.tag = V_IMAGE;
         result.u.img = out_img;
+    }else if (strcmp(fname, "contrast") == 0) {
+        if (nargs != 3) runtime_error("contrast() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int amount = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("contrast() direction (arg 3) must be 0 (reduce) or 1 (increase), got %d", direction);
+        }
+        if (amount < 0 || amount > 100) {
+            fprintf(stderr, "Warning: contrast amount %d is outside recommended 0-100 range. Clamping.\n", amount);
+            if (amount < 0) amount = 0;
+            if (amount > 100) amount = 100;
+        }
+        Image *out_img = adjust_contrast(img, amount, direction);
+        if (!out_img) runtime_error("contrast() failed");
+
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "brighten") == 0) {
+        if (nargs != 3) runtime_error("brighten() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int bias = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("brighten() direction (arg 3) must be 0 (reduce) or 1 (increase), got %d", direction);
+        }
+
+        Image *out_img = adjust_brightness(img, bias, direction);
+        if (!out_img) runtime_error("brighten() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "threshold") == 0) {
+        if (nargs != 3) runtime_error("threshold() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int threshold = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("threshold() direction (arg 3) must be 0 (inverted) or 1 (standard), got %d", direction);
+        }
+
+        if (threshold < 0 || threshold > 255) {
+            runtime_error("threshold() value (arg 2) must be between 0 and 255, got %d", threshold);
+        }
+        Image *out_img = apply_threshold(img, threshold, direction);
+        if (!out_img) runtime_error("threshold() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "sharpen") == 0) {
+        if (nargs != 3) runtime_error("sharpen() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int amount = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("sharpen() direction (arg 3) must be 0 (soften) or 1 (sharpen), got %d", direction);
+        }
+        if (amount < 0) {
+            fprintf(stderr, "Warning: sharpen amount %d is negative, using 0.\n", amount);
+            amount = 0;
+        }
+        
+        if (direction == 1 && amount > 20) {
+                fprintf(stderr, "Warning: sharpen amount %d is very high, capping at 20.\n", amount);
+                amount = 20;
+        }
+        
+        if (direction == 0 && amount == 0) {
+            amount = 1; 
+        }
+
+        Image *out_img = sharpen_image(img, amount, direction);
+        if (!out_img) runtime_error("sharpen() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "blend") == 0) {
+        if (nargs != 3) runtime_error("blend() expects 3 arguments, got %d", nargs);
+        
+        Image *img1 = value_to_image(args[0]);
+        Image *img2 = value_to_image(args[1]);
+        float alpha = (float)value_to_float(args[2]);
+
+        if (alpha < 0.0f || alpha > 1.0f) {
+            fprintf(stderr, "Warning: blend() alpha %f is outside [0.0, 1.0], clamping.\n", alpha);
+            if (alpha < 0.0f) alpha = 0.0f;
+            if (alpha > 1.0f) alpha = 1.0f;
+        }
+
+        Image *out_img = blend_images(img1, img2, alpha);
+        if (!out_img) runtime_error("blend() failed (check image dimensions match)");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "mask") == 0) {
+        if (nargs != 2) runtime_error("mask() expects 2 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        Image *mask = value_to_image(args[1]);
+
+        Image *out_img = mask_image(img, mask);
+        if (!out_img) runtime_error("mask() failed (check image dimensions match)");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "resize") == 0) {
+        if (nargs != 3) runtime_error("resize() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int w = value_to_int(args[1]);
+        int h = value_to_int(args[2]);
+        Image *out_img = resize_image_nearest(img, w, h);
+        if (!out_img) runtime_error("resize() failed");
+         
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "scale") == 0) {
+        if (nargs != 2) runtime_error("scale() expects 2 arguments (img, factor), got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        float factor = value_to_float(args[1]);
+
+        Image *out_img = scale_image_factor(img, factor);
+        if (!out_img) runtime_error("scale() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "rotate") == 0) {
+        if (nargs != 2) runtime_error("rotate() expects 2 arguments (img, angle_degrees), got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int direction = value_to_int(args[1]);
+
+        Image *out_img = rotate_image_90(img, direction);
+        if (!out_img) runtime_error("rotate() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "print") == 0) {
+        for (int i = 0; i < nargs; i++) {
+            switch (args[i].tag) {
+                case V_IMAGE:
+                    printf("<Image %dx%d>", args[i].u.img->width, args[i].u.img->height);
+                    break;
+                default:
+                    print_string_escaped(args[i].u.sval);
+                    break;
+            }
+            
+            // if (i < nargs - 1) {
+            //     print_string_escaped(" ");
+            // }
+        }
+        // print_string_escaped("\n"); 
+        
+        result.tag = V_NONE;
     }
     else if (strcmp(fname, "print") == 0) {
         if (nargs != 1) runtime_error("print() expects 1 argument, got %d", nargs);
@@ -253,9 +466,11 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         runtime_error("Unknown function call: %s", fname);
     }
 
-    // Avoid freeing arguments here to prevent double frees
-    // of values sourced from the environment. This may leak
-    // temporaries, but prevents crashes in common scripts.
+    if (free_args) {
+        for (int i = 0; i < nargs; i++) {
+            free_value(args[i]);
+        }
+    }
     
     return result;
 }
@@ -394,7 +609,12 @@ void eval_program(Ast *prog) {
         fprintf(stderr, "Error: NULL program in eval_program\n");
         return;
     }
-    eval_block(prog);
+    for (int i = 0; i < prog->block.n; i++) {
+        eval_stmt(prog->block.stmts[i]);
+    }
+    
+    // TODO: Free global environment
+    env_shutdown();
 }
 
 Value eval_expr(Ast *expr) {
@@ -418,8 +638,7 @@ Value eval_expr(Ast *expr) {
         }
         
         case AST_IDENT:
-            // This is still unsafe. You should implement refcounting.
-            return env_get(expr->ident.str);
+            return value_clone(env_get(expr->ident.str));
 
         case AST_CALL: {
             int nargs = expr->call.nargs;
@@ -592,4 +811,20 @@ Value eval_expr(Ast *expr) {
             runtime_error("Unknown expression type %d", expr->type);
     }
     return val_none();
+}
+
+
+void env_shutdown() {
+    Var *v = globals;
+    while (v) {
+        Var *next = v->next;
+        
+        // Free the variable's resources
+        free(v->name);
+        free_value(v->val); // Frees string/image data
+        free(v);            // Free the Var struct itself
+        
+        v = next;
+    }
+    globals = NULL;
 }
