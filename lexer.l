@@ -66,7 +66,7 @@ ID [a-zA-Z_][a-zA-Z0-9_]*
 "%" { return MOD; }
 
 [0-9]+"."[0-9]*([eE][+-]?[0-9]+)? { yylval.num = atof(yytext); return FLOAT_LIT; }
-[0-9]+ { yylval.i = atoi(yytext); return INT_LIT; }
+"-"?[0-9]+ { yylval.i = atoi(yytext); return INT_LIT; }
 \"([^\\\"]|\\.)*\" { yylval.str = strdup(yytext+1); yylval.str[strlen(yylval.str)-1] = '\0'; return STR_LIT; }
 
 {ID} { yylval.str = strdup(yytext); return IDENT; }
