@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h> // For runtime_error
 
-// --- SYMBOL TABLE (uses Value) ---
+// --- NEW SYMBOL TABLE (uses Value) ---
 
 typedef struct Var {
     char *name;
@@ -49,8 +49,8 @@ void env_set(const char *name, Value val) {
     while (v) {
         if (strcmp(v->name, name) == 0) {
             // Free the old value before overwriting
-            free_value(v->val); 
-            v->val = val;       
+            free_value(v->val); // <-- FIX: was v.val
+            v->val = val;       // <-- FIX: was v.val
             return;
         }
         v = v->next;
@@ -70,7 +70,6 @@ void env_set(const char *name, Value val) {
     nv->next = globals;
     globals = nv;
 }
-
 Value env_get(const char *name) {
     Var *v = globals;
     while (v) {
@@ -83,30 +82,17 @@ Value env_get(const char *name) {
     return val_none(); // Unreachable
 }
 
-void env_shutdown() {
-    Var *v = globals;
-    while (v) {
-        Var *next = v->next; // <-- FIXED TYPO (was v.next)
-        
-        // Free the variable's resources
-        free(v->name);
-        free_value(v->val); // Frees string/image data
-        free(v);            // Free the Var struct itself
-        
-        v = next;
-    }
-    globals = NULL;
-}
-// --- END SYMBOL TABLE ---
+// --- END NEW SYMBOL TABLE ---
 
 
-// --- TYPE COERCION & HELPERS ---
+// --- NEW TYPE COERCION HELPERS ---
 
 int value_to_int(Value val) {
     if (val.tag == V_INT) {
         return val.u.ival;
     }
     if (val.tag == V_FLOAT) {
+        // Allow float -> int coercion
         return (int)val.u.fval;
     }
     runtime_error("Type error: expected int or float, got %d", val.tag);
@@ -118,6 +104,7 @@ double value_to_float(Value val) {
         return val.u.fval;
     }
     if (val.tag == V_INT) {
+        // Allow int -> float coercion
         return (double)val.u.ival;
     }
     runtime_error("Type error: expected float or int, got %d", val.tag);
@@ -132,29 +119,6 @@ const char* value_to_string(Value val) {
     return NULL;
 }
 
-// --- ADDED HELPER ---
-// Coerces a value to a *new* heap-allocated string.
-// Caller must free the result.
-char* value_to_string_coerce(Value v) {
-    if (v.tag == V_STRING) {
-        return strdup(v.u.sval);
-    }
-    // Max 100 chars for a number string
-    char *buf = malloc(100); 
-    if (!buf) runtime_error("Failed to allocate for string coercion");
-    
-    if (v.tag == V_INT) {
-        snprintf(buf, 100, "%d", v.u.ival);
-    } else if (v.tag == V_FLOAT) {
-        snprintf(buf, 100, "%f", v.u.fval);
-    } else {
-        snprintf(buf, 100, "[unprintable_type:%d]", v.tag);
-    }
-    return buf;
-}
-// --- END ADDED HELPER ---
-
-
 Image* value_to_image(Value val) {
     if (val.tag == V_IMAGE) {
         return val.u.img;
@@ -163,15 +127,6 @@ Image* value_to_image(Value val) {
     return NULL;
 }
 
-int is_truthy(Value v) {
-    switch (v.tag) {
-        case V_INT:   return v.u.ival != 0;
-        case V_FLOAT: return v.u.fval != 0.0;
-        case V_STRING: return v.u.sval && v.u.sval[0] != '\0';
-        case V_IMAGE: return v.u.img != NULL;
-        case V_NONE:
-        default: return 0;
-    }
 Image *copy_image(Image *img) {
     if (!img) {
         runtime_error("copy_image: received NULL image");
@@ -265,9 +220,7 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
     else if (strcmp(fname, "blur") == 0) {
         if (nargs != 2) runtime_error("blur() expects 2 arguments, got %d", nargs);
         Image *img = value_to_image(args[0]);
-        // Accept both int and float for blur radius
-        double r_val = value_to_float(args[1]);
-        int r = (int)r_val; // Convert to int for blur_image function
+        int r = value_to_int(args[1]);
         Image *out_img = blur_image(img, r);
         if (!out_img) runtime_error("blur() failed");
         result.tag = V_IMAGE;
@@ -452,16 +405,6 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         
         result.tag = V_NONE;
     }
-    else if (strcmp(fname, "print") == 0) {
-        if (nargs != 1) runtime_error("print() expects 1 argument, got %d", nargs);
-        Value val = args[0];
-        char *str = value_to_string_coerce(val);
-        printf("%s\n", str);
-        free(str);
-        // Free the argument value
-        free_value(val);
-        result = val_none(); // print returns nothing
-            }
     else {
         runtime_error("Unknown function call: %s", fname);
     }
@@ -475,29 +418,18 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
     return result;
 }
 
-void eval_block(Ast *block) {
-    if (!block) return;
-    
-    if (block->type == AST_BLOCK) {
-        for (int i = 0; i < block->block.n; i++) {
-            eval_stmt(block->block.stmts[i]);
-        }
-    } else {
-        eval_stmt(block);
-    }
-}
-
 void eval_stmt(Ast *stmt) {
-    // ... (this function is unchanged from your last correct version) ...
     if (!stmt) return;
 
     switch (stmt->type) {
         case AST_DECL: {
+            // 1. Evaluate the expression
             Value val = eval_expr(stmt->decl.expr);
             TypeId declared_type = stmt->decl.type_node->type2;
 
+            // 2. Type-check and coerce
             if (declared_type == TYPE_INT) {
-                if (val.tag == V_FLOAT) { 
+                if (val.tag == V_FLOAT) { // Coerce float to int
                     val.u.ival = (int)val.u.fval;
                     val.tag = V_INT;
                 } else if (val.tag != V_INT) {
@@ -505,7 +437,7 @@ void eval_stmt(Ast *stmt) {
                 }
             }
             else if (declared_type == TYPE_FLOAT) {
-                if (val.tag == V_INT) { 
+                if (val.tag == V_INT) { // Coerce int to float
                     val.u.fval = (double)val.u.ival;
                     val.tag = V_FLOAT;
                 } else if (val.tag != V_FLOAT) {
@@ -519,85 +451,30 @@ void eval_stmt(Ast *stmt) {
                 if (val.tag != V_IMAGE) runtime_error("Type mismatch: cannot assign %d to image", val.tag);
             }
             
+            // 3. Store in environment
             env_set(stmt->decl.name, val);
             break;
         }
 
         case AST_ASSIGN: {
             Value val = eval_expr(stmt->assign.expr);
+            // In a strongly typed system, we would check the variable's existing type.
+            // For now, we just overwrite.
             env_set(stmt->assign.name, val);
             break;
         }
 
         case AST_EXPR_STMT: {
-            (void)eval_expr(stmt->expr_stmt.expr);
+            // Evaluate expression and free the result
+            Value val = eval_expr(stmt->expr_stmt.expr);
+            free_value(val);
             break;
         }
 
         case AST_FUNC_DEF:
+            /* Store function if implementing calls to user funcs */
             break;
 
-        case AST_IF: {
-            Value cond = eval_expr(stmt->if_stmt.cond);
-            if (is_truthy(cond)) {
-                eval_block(stmt->if_stmt.block);
-            }
-            free_value(cond);
-            break;
-        }
-        
-        case AST_IF_ELSE: {
-            Value cond = eval_expr(stmt->if_else_stmt.cond);
-            if (is_truthy(cond)) {
-                eval_block(stmt->if_else_stmt.then_block);
-            } else {
-                eval_block(stmt->if_else_stmt.else_block);
-            }
-            free_value(cond);
-            break;
-        }
-        
-        case AST_WHILE: {
-            while (1) {
-                Value cond = eval_expr(stmt->while_stmt.cond);
-                int should_continue = is_truthy(cond);
-                free_value(cond);
-                
-                if (!should_continue) break;
-                
-                eval_block(stmt->while_stmt.block);
-            }
-            break;
-        }
-        
-        case AST_FOR: {
-            // Execute initialization
-            if (stmt->for_stmt.init) {
-                eval_stmt(stmt->for_stmt.init);
-            }
-            
-            // Loop: check condition, execute body, execute update
-            while (1) {
-                // Check condition
-                if (stmt->for_stmt.cond) {
-                    Value cond = eval_expr(stmt->for_stmt.cond);
-                    int should_continue = is_truthy(cond);
-                    free_value(cond);
-                    
-                    if (!should_continue) break;
-                }
-                
-                // Execute body
-                eval_block(stmt->for_stmt.block);
-                
-                // Execute update
-                if (stmt->for_stmt.update) {
-                    eval_stmt(stmt->for_stmt.update);
-                }
-            }
-            break;
-        }
-        
         default:
             runtime_error("Unknown statement type %d", stmt->type);
             break;
@@ -624,16 +501,21 @@ Value eval_expr(Ast *expr) {
     
     switch (expr->type) {
         case AST_INT_LIT: {
-            Value v; v.tag = V_INT; v.u.ival = expr->ival;
+            Value v;
+            v.tag = V_INT;
+            v.u.ival = expr->ival;
             return v;
         }
         case AST_FLOAT_LIT: {
-            Value v; v.tag = V_FLOAT; v.u.fval = expr->fval;
+            Value v;
+            v.tag = V_FLOAT;
+            v.u.fval = expr->fval;
             return v;
         }
         case AST_STRING_LIT: {
-            Value v; v.tag = V_STRING;
-            v.u.sval = strdup(expr->sval); 
+            Value v;
+            v.tag = V_STRING;
+            v.u.sval = strdup(expr->sval); // Value must own its own copy
             return v;
         }
         
@@ -641,6 +523,7 @@ Value eval_expr(Ast *expr) {
             return value_clone(env_get(expr->ident.str));
 
         case AST_CALL: {
+            // 1. Evaluate all arguments
             int nargs = expr->call.nargs;
             Value *args = malloc(sizeof(Value) * nargs);
             if (!args) runtime_error("Failed to allocate args for call");
@@ -649,12 +532,17 @@ Value eval_expr(Ast *expr) {
                 args[i] = eval_expr(expr->call.args[i]);
             }
             
+            // 2. Call the builtin function
             Value result = eval_builtin_call(expr->call.name, args, nargs);
+            
+            // 3. Free the args array
             free(args);
+            
             return result;
         }
 
         case AST_PIPELINE: {
+            // 1. Evaluate LHS
             Value lhs = eval_expr(expr->pipe.left);
             
             Ast *c = expr->pipe.right;
@@ -662,144 +550,29 @@ Value eval_expr(Ast *expr) {
                 runtime_error("Pipeline right-hand side must be a function call");
             }
 
-            // Special handling for save() - it expects (path, image) but pipeline puts image first
-            int is_save = (strcmp(c->call.name, "save") == 0 && c->call.nargs == 1);
-            
+            // 2. Create new argument list
             int nargs = c->call.nargs + 1;
             Value *args = malloc(sizeof(Value) * nargs);
             if (!args) runtime_error("Failed to allocate args for pipeline");
 
-            if (is_save) {
-                // For save: put path first (from call args), then image (from lhs)
-                args[0] = eval_expr(c->call.args[0]);
-                args[1] = lhs;
-            } else {
-                // For other functions: put lhs first, then call args
-                args[0] = lhs;
-                for (int i = 0; i < c->call.nargs; i++) {
-                    args[i + 1] = eval_expr(c->call.args[i]);
-                }
+            // 3. Set LHS as first argument
+            args[0] = lhs;
+            
+            // 4. Evaluate RHS arguments
+            for (int i = 0; i < c->call.nargs; i++) {
+                args[i + 1] = eval_expr(c->call.args[i]);
             }
 
+            // 5. Call builtin
             Value result = eval_builtin_call(c->call.name, args, nargs);
+            
+            // 6. Free args array
             free(args);
+
             return result;
         }
         
-        // --- MODIFIED BINOP CASE ---
-        case AST_BINOP: {
-            Value L = eval_expr(expr->binop.left);
-            Value R = eval_expr(expr->binop.right);
-            Value out = val_none();
-            out.tag = V_INT; // Most ops return an int (0 or 1)
-            
-            BinOp op = expr->binop.op;
-
-            // Handle relational operators
-            if (op == OP_LT || op == OP_GT || op == OP_LE || op == OP_GE) {
-                int L_is_num = (L.tag == V_INT || L.tag == V_FLOAT);
-                int R_is_num = (R.tag == V_INT || R.tag == V_FLOAT);
-                if (!L_is_num || !R_is_num) {
-                    runtime_error("Relational operators require numeric operands");
-                }
-                double lv = (L.tag == V_INT) ? (double)L.u.ival : L.u.fval;
-                double rv = (R.tag == V_INT) ? (double)R.u.ival : R.u.fval;
-                int res = 0;
-                if (op == OP_LT) res = lv < rv;
-                else if (op == OP_GT) res = lv > rv;
-                else if (op == OP_LE) res = lv <= rv;
-                else if (op == OP_GE) res = lv >= rv;
-                out.u.ival = res;
-            }
-            // Handle equality
-            else if (op == OP_EQ) {
-                int res = 0;
-                if ((L.tag == V_INT || L.tag == V_FLOAT) && (R.tag == V_INT || R.tag == V_FLOAT)) {
-                    double lv = (L.tag == V_INT) ? (double)L.u.ival : L.u.fval;
-                    double rv = (R.tag == V_INT) ? (double)R.u.ival : R.u.fval;
-                    res = (lv == rv);
-                } else if (L.tag == V_STRING && R.tag == V_STRING) {
-                    res = (strcmp(L.u.sval, R.u.sval) == 0);
-                } else if (L.tag == V_IMAGE && R.tag == V_IMAGE) {
-                    res = (L.u.img == R.u.img); /* pointer-equality */
-                } else {
-                    res = 0; // different types are not equal
-                }
-                out.u.ival = res;
-            }
-            // Handle arithmetic
-            else if (op == OP_ADD) {
-                if (L.tag == V_STRING || R.tag == V_STRING) {
-                    char *ls = value_to_string_coerce(L);
-                    char *rs = value_to_string_coerce(R);
-                    size_t n = strlen(ls) + strlen(rs) + 1;
-                    char *buf = malloc(n);
-                    if (!buf) runtime_error("Failed to allocate for string concat");
-                    strcpy(buf, ls);
-                    strcat(buf, rs);
-                    out.tag = V_STRING;
-                    out.u.sval = buf;
-                    free(ls);
-                    free(rs);
-                } else if (L.tag == V_INT && R.tag == V_INT) {
-                    out.tag = V_INT;
-                    out.u.ival = L.u.ival + R.u.ival;
-                } else { // Mixed int/float -> float
-                    out.tag = V_FLOAT;
-                    out.u.fval = value_to_float(L) + value_to_float(R);
-                }
-            }
-            else if (op == OP_SUB) {
-                if (L.tag == V_INT && R.tag == V_INT) {
-                    out.tag = V_INT;
-                    out.u.ival = L.u.ival - R.u.ival;
-                } else { // Mixed int/float -> float
-                    out.tag = V_FLOAT;
-                    out.u.fval = value_to_float(L) - value_to_float(R);
-                }
-            }
-            else if (op == OP_MUL) {
-                if (L.tag == V_INT && R.tag == V_INT) {
-                    out.tag = V_INT;
-                    out.u.ival = L.u.ival * R.u.ival;
-                } else { // Mixed int/float -> float
-                    out.tag = V_FLOAT;
-                    out.u.fval = value_to_float(L) * value_to_float(R);
-                }
-            }
-            else if (op == OP_DIV) {
-                double rv = value_to_float(R);
-                if (rv == 0.0) {
-                    runtime_error("Division by zero");
-                }
-                if (L.tag == V_INT && R.tag == V_INT) {
-                    out.tag = V_INT;
-                    out.u.ival = L.u.ival / R.u.ival;
-                } else { // Mixed int/float -> float
-                    out.tag = V_FLOAT;
-                    out.u.fval = value_to_float(L) / rv;
-                }
-            }
-            else if (op == OP_MOD) {
-                if (L.tag != V_INT || R.tag != V_INT) {
-                    runtime_error("Modulo operator requires integer operands");
-                }
-                if (R.u.ival == 0) {
-                    runtime_error("Modulo by zero");
-                }
-                out.tag = V_INT;
-                out.u.ival = L.u.ival % R.u.ival;
-            }
-            else {
-                runtime_error("Unsupported binary operator %d", op);
-            }
-            
-            // Do not free operands here to avoid double frees of
-            // environment-backed values.
-            return out;
-        }
-        // --- END BINOP CASE ---
-        
+        // --- OBSOLETE NODES (should be removed from parser) ---
         case AST_NUMBER:
             runtime_error("Obsolete AST_NUMBER node encountered");
             break;

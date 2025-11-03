@@ -9,14 +9,6 @@ typedef enum {
     TYPE_UNKNOWN 
 } TypeId;
 
-// --- NEW BinOp ENUM ---
-typedef enum {
-    OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
-    OP_LT, OP_GT, OP_LE, OP_GE, OP_EQ
-    /* Add NEQ, etc. if you want */
-} BinOp;
-// --- END ---
-
 typedef enum {
     AST_ASSIGN,
     AST_EXPR_STMT,
@@ -40,7 +32,6 @@ typedef enum {
     AST_STRING_LIT, 
     AST_DECL, 
     AST_TYPE,
-    AST_BINOP // <-- ADDED
 } AstType;
 
 typedef struct Ast {
@@ -66,7 +57,6 @@ typedef struct Ast {
         struct { double num; } number;
         struct { char *str; } string;
         struct { char *str; } ident;
-        struct { BinOp op; struct Ast *left; struct Ast *right; } binop; // <-- ADDED
     };
 } Ast;
 
@@ -75,7 +65,6 @@ Ast *make_float_literal(double v);
 Ast *make_string_literal(const char *s);
 Ast *make_type_node(TypeId t);
 Ast *make_decl_node(Ast *type_node, char *name, Ast *expr);
-Ast *make_binop_node(BinOp op, Ast *left, Ast *right); // <-- ADDED
 
 // Constructors
 Ast *make_assign(char *name, Ast *expr);
