@@ -26,26 +26,24 @@ ID [a-zA-Z_][a-zA-Z0-9_]*
 "false" { yylval.i = 0; return FALSE; }
 "null" { return NULLVAL; }
 
-"load" { yylval.str = strdup(yytext); return IDENT; }
-"save" { yylval.str = strdup(yytext); return IDENT; }
-"crop" { yylval.str = strdup(yytext); return IDENT; }
-"resize" { yylval.str = strdup(yytext); return IDENT; }
-"scale" { yylval.str = strdup(yytext); return IDENT; }
-"rotate" { yylval.str = strdup(yytext); return IDENT; }
-"flipX" { yylval.str = strdup(yytext); return IDENT; }
-"flipY" { yylval.str = strdup(yytext); return IDENT; }
-"mirror" { yylval.str = strdup(yytext); return IDENT; }
-"blur" { yylval.str = strdup(yytext); return IDENT; }
-"sharpen" { yylval.str = strdup(yytext); return IDENT; }
-"grayscale" { yylval.str = strdup(yytext); return IDENT; }
-"invert" { yylval.str = strdup(yytext); return IDENT; }
-"brighten" { yylval.str = strdup(yytext); return IDENT; }
-"contrast" { yylval.str = strdup(yytext); return IDENT; }
-"threshold" { yylval.str = strdup(yytext); return IDENT; }
-"cannyedge" { yylval.str = strdup(yytext); return IDENT; }
-"blend" { yylval.str = strdup(yytext); return IDENT; }
-"composite" { yylval.str = strdup(yytext); return IDENT; }
-"convolve" { yylval.str = strdup(yytext); return IDENT; }
+"load" { yylval.str = strdup(yytext); return IDENT; } //done
+"save" { yylval.str = strdup(yytext); return IDENT; } //done
+"crop" { yylval.str = strdup(yytext); return IDENT; } //done
+"resize" { yylval.str = strdup(yytext); return IDENT; } //done
+"scale" { yylval.str = strdup(yytext); return IDENT; } //done
+"rotate" { yylval.str = strdup(yytext); return IDENT; } //done
+"flipX" { yylval.str = strdup(yytext); return IDENT; } //done
+"flipY" { yylval.str = strdup(yytext); return IDENT; } //done
+"blur" { yylval.str = strdup(yytext); return IDENT; } // done
+"sharpen" { yylval.str = strdup(yytext); return IDENT; } //done
+"grayscale" { yylval.str = strdup(yytext); return IDENT; } //done
+"invert" { yylval.str = strdup(yytext); return IDENT; } //done
+"brighten" { yylval.str = strdup(yytext); return IDENT; } //done
+"contrast" { yylval.str = strdup(yytext); return IDENT; } //done
+"threshold" { yylval.str = strdup(yytext); return IDENT; } //done
+"cannyedge" { yylval.str = strdup(yytext); return IDENT; } //done
+"blend" { yylval.str = strdup(yytext); return IDENT; } //done
+"mask" { yylval.str = strdup(yytext); return IDENT; } //done
 
 "image" { return IMAGE_TK; }
 "int" { return INT_TK; }

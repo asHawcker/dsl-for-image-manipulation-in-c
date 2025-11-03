@@ -134,7 +134,7 @@ Image* value_to_image(Value val) {
 // It *consumes* (frees) all arguments in the 'args' array, unless specified.
 Value eval_builtin_call(const char *fname, Value *args, int nargs) {
     Value result = val_none(); // Default return
-    int free_args = 1;         // --- ADDED --- By default, free all args
+    int free_args = 1;
 
     if (strcmp(fname, "load") == 0) {
         if (nargs != 1) runtime_error("load() expects 1 argument, got %d", nargs);
@@ -150,12 +150,9 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         Image *img = value_to_image(args[1]);
         save_image(path, img);
         
-        // --- ADDED SPECIAL FREEING ---
-        // 'save' consumes the path string, but *not* the image Value.
-        // We only free the path, and tell the main loop to skip freeing.
-        free_value(args[0]); // free the path string
-        free_args = 0;       // Tell the final loop not to run
-        // --- END SPECIAL FREEING ---
+        free_value(args[0]);
+        free_args = 0;
+        
     }
     else if (strcmp(fname, "crop") == 0) {
         if (nargs != 5) runtime_error("crop() expects 5 arguments, got %d", nargs);
@@ -186,12 +183,156 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         result.tag = V_IMAGE;
         result.u.img = out_img;
     }
-    // ... other functions (invert, flipX, flipY, cannyedge, brighten) ...
-    // Example for 'invert'
     else if (strcmp(fname, "invert") == 0 && nargs == 1) {
         Image *img = value_to_image(args[0]);
         Image *out_img = invert_image(img);
         if (!out_img) runtime_error("invert() failed");
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    }else if (strcmp(fname, "contrast") == 0) {
+        if (nargs != 3) runtime_error("contrast() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int amount = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("contrast() direction (arg 3) must be 0 (reduce) or 1 (increase), got %d", direction);
+        }
+        if (amount < 0 || amount > 100) {
+            fprintf(stderr, "Warning: contrast amount %d is outside recommended 0-100 range. Clamping.\n", amount);
+            if (amount < 0) amount = 0;
+            if (amount > 100) amount = 100;
+        }
+        Image *out_img = adjust_contrast(img, amount, direction);
+        if (!out_img) runtime_error("contrast() failed");
+
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "brighten") == 0) {
+        if (nargs != 3) runtime_error("brighten() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int bias = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("brighten() direction (arg 3) must be 0 (reduce) or 1 (increase), got %d", direction);
+        }
+
+        Image *out_img = adjust_brightness(img, bias, direction);
+        if (!out_img) runtime_error("brighten() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "threshold") == 0) {
+        if (nargs != 3) runtime_error("threshold() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int threshold = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("threshold() direction (arg 3) must be 0 (inverted) or 1 (standard), got %d", direction);
+        }
+
+        if (threshold < 0 || threshold > 255) {
+            runtime_error("threshold() value (arg 2) must be between 0 and 255, got %d", threshold);
+        }
+        Image *out_img = apply_threshold(img, threshold, direction);
+        if (!out_img) runtime_error("threshold() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "sharpen") == 0) {
+        if (nargs != 3) runtime_error("sharpen() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int amount = value_to_int(args[1]);
+        int direction = value_to_int(args[2]);
+
+        if (direction != 0 && direction != 1) {
+            runtime_error("sharpen() direction (arg 3) must be 0 (soften) or 1 (sharpen), got %d", direction);
+        }
+        if (amount < 0) {
+            fprintf(stderr, "Warning: sharpen amount %d is negative, using 0.\n", amount);
+            amount = 0;
+        }
+        
+        if (direction == 1 && amount > 20) {
+                fprintf(stderr, "Warning: sharpen amount %d is very high, capping at 20.\n", amount);
+                amount = 20;
+        }
+        
+        if (direction == 0 && amount == 0) {
+            amount = 1; 
+        }
+
+        Image *out_img = sharpen_image(img, amount, direction);
+        if (!out_img) runtime_error("sharpen() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "blend") == 0) {
+        if (nargs != 3) runtime_error("blend() expects 3 arguments, got %d", nargs);
+        
+        Image *img1 = value_to_image(args[0]);
+        Image *img2 = value_to_image(args[1]);
+        float alpha = (float)value_to_float(args[2]);
+
+        if (alpha < 0.0f || alpha > 1.0f) {
+            fprintf(stderr, "Warning: blend() alpha %f is outside [0.0, 1.0], clamping.\n", alpha);
+            if (alpha < 0.0f) alpha = 0.0f;
+            if (alpha > 1.0f) alpha = 1.0f;
+        }
+
+        Image *out_img = blend_images(img1, img2, alpha);
+        if (!out_img) runtime_error("blend() failed (check image dimensions match)");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "mask") == 0) {
+        if (nargs != 2) runtime_error("mask() expects 2 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        Image *mask = value_to_image(args[1]);
+
+        Image *out_img = mask_image(img, mask);
+        if (!out_img) runtime_error("mask() failed (check image dimensions match)");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "resize") == 0) {
+        if (nargs != 3) runtime_error("resize() expects 3 arguments, got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int w = value_to_int(args[1]);
+        int h = value_to_int(args[2]);
+        Image *out_img = resize_image_nearest(img, w, h);
+        if (!out_img) runtime_error("resize() failed");
+         
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "scale") == 0) {
+        if (nargs != 2) runtime_error("scale() expects 2 arguments (img, factor), got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        float factor = value_to_float(args[1]);
+
+        Image *out_img = scale_image_factor(img, factor);
+        if (!out_img) runtime_error("scale() failed");
+        
+        result.tag = V_IMAGE;
+        result.u.img = out_img;
+    } else if (strcmp(fname, "rotate") == 0) {
+        if (nargs != 2) runtime_error("rotate() expects 2 arguments (img, angle_degrees), got %d", nargs);
+        
+        Image *img = value_to_image(args[0]);
+        int direction = value_to_int(args[1]);
+
+        Image *out_img = rotate_image_90(img, direction);
+        if (!out_img) runtime_error("rotate() failed");
+        
         result.tag = V_IMAGE;
         result.u.img = out_img;
     }
