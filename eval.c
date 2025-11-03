@@ -386,6 +386,24 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         
         result.tag = V_IMAGE;
         result.u.img = out_img;
+    } else if (strcmp(fname, "print") == 0) {
+        for (int i = 0; i < nargs; i++) {
+            switch (args[i].tag) {
+                case V_IMAGE:
+                    printf("<Image %dx%d>", args[i].u.img->width, args[i].u.img->height);
+                    break;
+                default:
+                    print_string_escaped(args[i].u.sval);
+                    break;
+            }
+            
+            // if (i < nargs - 1) {
+            //     print_string_escaped(" ");
+            // }
+        }
+        // print_string_escaped("\n"); 
+        
+        result.tag = V_NONE;
     }
     else {
         runtime_error("Unknown function call: %s", fname);

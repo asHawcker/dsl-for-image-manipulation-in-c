@@ -44,6 +44,7 @@ ID [a-zA-Z_][a-zA-Z0-9_]*
 "cannyedge" { yylval.str = strdup(yytext); return IDENT; } //done
 "blend" { yylval.str = strdup(yytext); return IDENT; } //done
 "mask" { yylval.str = strdup(yytext); return IDENT; } //done
+"print" {yylval.str = strdup(yytext); return IDENT; } //done
 
 "image" { return IMAGE_TK; }
 "int" { return INT_TK; }

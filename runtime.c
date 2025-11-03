@@ -836,3 +836,37 @@ Image *rotate_image_90(Image *img, int direction) {
     
     return out;
 }
+
+// Helper function to print a string while interpreting basic escape sequences
+void print_string_escaped(const char *s) {
+    if (!s) return;
+
+    for (int i = 0; s[i] != '\0'; i++) {
+        if (s[i] == '\\') {
+            i++;
+            switch (s[i]) {
+                case 'n':
+                    putchar('\n');
+                    break;
+                case 't':
+                    putchar('\t');
+                    break;
+                case '\\':
+                    putchar('\\');
+                    break;
+                case '"':
+                    putchar('"'); 
+                    break;
+                case '\0':
+                    putchar('\\');
+                    return;
+                default:
+                    putchar('\\');
+                    putchar(s[i]);
+                    break;
+            }
+        } else {
+            putchar(s[i]);
+        }
+    }
+}

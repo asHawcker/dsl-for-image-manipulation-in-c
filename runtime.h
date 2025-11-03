@@ -33,4 +33,6 @@ Image *resize_image_nearest(Image *img, int new_w, int new_h);
 Image *scale_image_factor(Image *img, float factor);
 Image *rotate_image_90(Image *img, int direction) ;
 
+void print_string_escaped(const char *s);
+
 #endif

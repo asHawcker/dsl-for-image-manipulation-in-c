@@ -1,3 +1,5 @@
+int a= 10;
 img = load("input3.jpg") |> threshold(180,1);
 img2 = load("input2.jpg") |> rotate(-1);
 save("output.jpg",img2);
+print("done running", img,"\n");
