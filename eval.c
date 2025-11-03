@@ -127,6 +127,57 @@ Image* value_to_image(Value val) {
     return NULL;
 }
 
+Image *copy_image(Image *img) {
+    if (!img) {
+        runtime_error("copy_image: received NULL image");
+        return NULL;
+    }
+    if (!img->data) {
+         runtime_error("copy_image: received image with NULL data");
+         return NULL;
+    }
+    Image *new_img = malloc(sizeof(Image));
+    if (!new_img) {
+        runtime_error("copy_image: failed to allocate new Image struct");
+        return NULL;
+    }
+    new_img->width = img->width;
+    new_img->height = img->height;
+    new_img->channels = img->channels;
+    size_t data_size = (size_t)img->width * img->height * img->channels;
+    if (data_size == 0) {
+        runtime_error("copy_image: image has zero size");
+        free(new_img);
+        return NULL;
+    }
+    new_img->data = malloc(data_size);
+    if (!new_img->data) {
+        runtime_error("copy_image: failed to allocate new image data");
+        free(new_img);
+        return NULL;
+    }
+    memcpy(new_img->data, img->data, data_size);
+    return new_img;
+}
+
+Value value_clone(Value val) {
+    if (val.tag == V_STRING) {
+        Value new_val;
+        new_val.tag = V_STRING;
+        new_val.u.sval = strdup(val.u.sval);
+        if (!new_val.u.sval) runtime_error("Failed to clone string");
+        return new_val;
+    }
+    if (val.tag == V_IMAGE) {
+        Value new_val;
+        new_val.tag = V_IMAGE;
+        new_val.u.img = copy_image(val.u.img);
+        if (!new_val.u.img) runtime_error("Failed to clone image");
+        return new_val;
+    }
+    return val;
+}
+
 // --- END HELPERS ---
 
 
@@ -340,8 +391,6 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         runtime_error("Unknown function call: %s", fname);
     }
 
-    // --- CHANGED ---
-    // Free all arguments *if* not handled specially
     if (free_args) {
         for (int i = 0; i < nargs; i++) {
             free_value(args[i]);
@@ -355,7 +404,6 @@ void eval_stmt(Ast *stmt) {
     if (!stmt) return;
 
     switch (stmt->type) {
-        // === THIS IS THE REQUESTED IMPLEMENTATION ===
         case AST_DECL: {
             // 1. Evaluate the expression
             Value val = eval_expr(stmt->decl.expr);
@@ -389,7 +437,6 @@ void eval_stmt(Ast *stmt) {
             env_set(stmt->decl.name, val);
             break;
         }
-        // === END REQUESTED IMPLEMENTATION ===
 
         case AST_ASSIGN: {
             Value val = eval_expr(stmt->assign.expr);
@@ -426,6 +473,7 @@ void eval_program(Ast *prog) {
     }
     
     // TODO: Free global environment
+    env_shutdown();
 }
 
 Value eval_expr(Ast *expr) {
@@ -434,7 +482,6 @@ Value eval_expr(Ast *expr) {
     }
     
     switch (expr->type) {
-        // === THESE ARE THE REQUESTED IMPLEMENTATIONS ===
         case AST_INT_LIT: {
             Value v;
             v.tag = V_INT;
@@ -453,14 +500,9 @@ Value eval_expr(Ast *expr) {
             v.u.sval = strdup(expr->sval); // Value must own its own copy
             return v;
         }
-        // === END REQUESTED IMPLEMENTATIONS ===
         
         case AST_IDENT:
-            // TODO: We should clone the value if it's heap-allocated
-            // For now, just return it. This might cause double-free issues.
-            // A proper solution requires reference counting or deep copying.
-            // For now, we'll assume env_get returns a value we can use.
-            return env_get(expr->ident.str);
+            return value_clone(env_get(expr->ident.str));
 
         case AST_CALL: {
             // 1. Evaluate all arguments
@@ -526,7 +568,6 @@ Value eval_expr(Ast *expr) {
     return val_none();
 }
 
-// ... at the end of eval.c ...
 
 void env_shutdown() {
     Var *v = globals;
