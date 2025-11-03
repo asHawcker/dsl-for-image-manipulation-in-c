@@ -30,6 +30,7 @@ typedef enum {
     AST_INT_LIT, 
     AST_FLOAT_LIT, 
     AST_STRING_LIT, 
+    AST_NULL_LIT,
     AST_DECL, 
     AST_TYPE,
     AST_BINOP,
@@ -89,6 +90,7 @@ Ast *make_string(char *s);
 Ast *make_ident(char *name);
 Ast *clone_ast(Ast *ast);
 Ast *make_binop(struct Ast *left, int op, struct Ast *right);
+Ast *make_null_literal();
 
 // Utility
 void free_ast(Ast *ast);

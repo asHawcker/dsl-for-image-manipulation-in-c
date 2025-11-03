@@ -147,6 +147,7 @@ primary_expr:
     | '(' expr ')' { $$ = $2; }
     | TRUE      { $$ = make_int_literal($1); }
     | FALSE     { $$ = make_int_literal($1); }
+    | NULLVAL   { $$ = make_null_literal(); }
     ;
 
 /* --- END EXPRESSION RULES --- */

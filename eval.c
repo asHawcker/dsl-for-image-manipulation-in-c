@@ -192,9 +192,12 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
         if (nargs != 1) runtime_error("load() expects 1 argument, got %d", nargs);
         const char *path = value_to_string(args[0]);
         Image *img = load_image(path);
-        if (!img) runtime_error("load(%s) failed", path);
-        result.tag = V_IMAGE;
-        result.u.img = img;
+        if (!img) {
+            result = val_none();
+        } else {
+            result.tag = V_IMAGE;
+            result.u.img = img;
+        }
     }
     else if (strcmp(fname, "save") == 0) {
         if (nargs != 2) runtime_error("save() expects 2 arguments, got %d", nargs);
@@ -402,6 +405,9 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
                 case V_STRING:
                     print_string_escaped(args[i].u.sval);
                     break;
+                case V_NONE:
+                    printf("<null>");
+                    break;
                 default:
                     printf("<unknown_type>");
                     break;
@@ -607,6 +613,8 @@ Value eval_expr(Ast *expr) {
             v.u.sval = strdup(expr->sval); // Value must own its own copy
             return v;
         }
+        case AST_NULL_LIT: 
+            return val_none();
         
         case AST_IDENT:
             return value_clone(env_get(expr->ident.str));
@@ -636,6 +644,17 @@ Value eval_expr(Ast *expr) {
             Value result;
             
             int op = expr->binop.op;
+
+            if (left.tag == V_NONE || right.tag == V_NONE) {
+                result.tag = V_INT;
+                if (op == EQ) {
+                    result.u.ival = (left.tag == V_NONE && right.tag == V_NONE);
+                } else if (op == NEQ) {
+                    result.u.ival = (left.tag != V_NONE || right.tag != V_NONE);
+                } else {
+                    runtime_error("Operator %d not supported for 'null' type", op);
+                }
+            }
 
             if (left.tag == V_STRING || right.tag == V_STRING) {
                 if (left.tag != V_STRING || right.tag != V_STRING) {
@@ -713,6 +732,16 @@ Value eval_expr(Ast *expr) {
 
                     default:
                         runtime_error("Unknown binary operator %d for ints", op);
+                }
+            }
+            else if (left.tag == V_IMAGE && right.tag == V_IMAGE) {
+                result.tag = V_INT;
+                if (op == EQ) {
+                    result.u.ival = (left.u.img == right.u.img);
+                } else if (op == NEQ) {
+                    result.u.ival = (left.u.img != right.u.img);
+                } else {
+                    runtime_error("Operator %d not supported for image types", op);
                 }
             }
             else {

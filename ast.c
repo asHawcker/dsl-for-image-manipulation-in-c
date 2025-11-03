@@ -224,6 +224,14 @@ Ast *make_binop(struct Ast *left, int op, struct Ast *right) {
     return ast;
 }
 
+Ast *make_null_literal() {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_NULL_LIT;
+    ast->type2 = TYPE_UNKNOWN;
+    return ast;
+}
+
 // Deep clone AST node and children
 Ast *clone_ast(Ast *ast) {
     if (!ast) return NULL;
@@ -442,6 +450,8 @@ void free_ast(Ast *ast) {
             free_ast(ast->binop.left);
             free_ast(ast->binop.right);
             break;
+        case AST_NULL_LIT:
+            break;
         default: 
             break;
     }
@@ -558,6 +568,9 @@ void dump_ast(Ast *ast, int indent) {
             printf("BinOp: (op code %d)\n", ast->binop.op);
             dump_ast(ast->binop.left, indent+1);
             dump_ast(ast->binop.right, indent+1);
+            break;
+        case AST_NULL_LIT:
+            printf("Null\n");
             break;
         default: 
             printf("Unknown node\n"); 

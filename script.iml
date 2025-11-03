@@ -1,0 +1,4 @@
+img = load("input3.jpg") |> threshold(200,1);
+img2 = load("input2.jpg") |> mask(img);
+save("output.jpg", img2);
+
