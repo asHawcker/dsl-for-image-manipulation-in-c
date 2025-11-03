@@ -1,5 +1,9 @@
-int a= 10;
-img = load("input3.jpg") |> threshold(180,1);
-img2 = load("input2.jpg") |> rotate(-1);
-save("output.jpg",img2);
-print("done running", img,"\n");
+int a = 100;
+if (a < 50) {
+  print("Low");
+} else if (a < 100) {
+  print("Medium");
+} else {
+  load("input.png") |> crop(100, 100, 200, 200) |> save("ladder.png");
+  print("High crop done!");
+}

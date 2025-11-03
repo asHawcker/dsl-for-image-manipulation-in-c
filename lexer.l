@@ -9,21 +9,19 @@
 %option noinput
 %option nounput
 
-ID [a-zA-Z_][a-zA-Z0-9_]*
-
 %%
 
 "def" { return DEF; }
 "return" { return RETURN; }
-"if" { return IF; }
-"else" { return ELSE; }
+"if" { return IF_TK; }
+"else" { return ELSE_TK; }
 "for" { return FOR; }
 "while" { return WHILE; }
 "break" { return BREAK; }
 "continue" { return CONTINUE; }
 
-"true" { yylval.i = 1; return TRUE; }
-"false" { yylval.i = 0; return FALSE; }
+"true" { yylval.ival = 1; return TRUE; }
+"false" { yylval.ival = 0; return FALSE; }
 "null" { return NULLVAL; }
 
 "load" { yylval.str = strdup(yytext); return IDENT; } //done
@@ -52,34 +50,43 @@ ID [a-zA-Z_][a-zA-Z0-9_]*
 "string" { return STRING_TK; }
 "bool" { return BOOL_TYPE; }
 
+
+"<=" { return LE_TK; }
+">=" { return GE_TK; }
+"==" { return EQ_TK; }
+
+"{" { return '{'; }
+"}" { return '}'; }
+
+
+"<" { return '<'; }
+">" { return '>'; }
+"=" { return '='; }
+
 "|>" { return PIPE_OP; }
-"==" { return EQ; }
-"!=" { return NEQ; }
-">=" { return GE; }
-"<=" { return LE; }
-">" { return GT; }
-"<" { return LT; }
-"=" { return ASSIGN; }
+"+=" { return PLUS_ASSIGN; }
+"-=" { return MINUS_ASSIGN; }
+"*=" { return MUL_ASSIGN; }
+"/=" { return DIV_ASSIGN; }
+"%=" { return MOD_ASSIGN; }
 "+" { return PLUS; }
 "-" { return MINUS; }
 "*" { return MUL; }
 "/" { return DIV; }
 "%" { return MOD; }
 
-[0-9]+"."[0-9]*([eE][+-]?[0-9]+)? { yylval.num = atof(yytext); return FLOAT_LIT; }
-"-"?[0-9]+ { yylval.i = atoi(yytext); return INT_LIT; }
-\"([^\\\"]|\\.)*\" { yylval.str = strdup(yytext+1); yylval.str[strlen(yylval.str)-1] = '\0'; return STR_LIT; }
 
-{ID} { yylval.str = strdup(yytext); return IDENT; }
+[0-9]+"."[0-9]*([eE][+-]?[0-9]+)? { yylval.fval = atof(yytext); return FLOAT_LIT; }
+"-"?[0-9]+ { yylval.ival = atoi(yytext); return INT_LIT; }
+\"([^\\\"]|\\.)*\" { yylval.sval = strdup(yytext+1); yylval.sval[strlen(yylval.sval)-1] = '\0'; return STR_LIT; }
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.sval = strdup(yytext); return IDENT; }
 
 
-[ \t\n\r]+ {  }
+[ \t\n\r]+ { }
 ";" { return ';'; }
 "," { return ','; }
 "(" { return '('; }
 ")" { return ')'; }
-"{" { return '{'; }
-"}" { return '}'; }
 
 . { fprintf(stderr,"Unknown char: %s\n", yytext); exit(1); }
 

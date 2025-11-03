@@ -9,193 +9,197 @@ void yyerror(const char *s) { fprintf(stderr,"Error: %s\n",s); }
 %}
 
 %union {
-    char *str;
-    double num;
-    int i;
+    char *sval;
+    double fval;
+    int ival;
     Ast *ast;
 }
 
-/* --- TOKEN DECLARATIONS (CLEANED) --- */
-
-/* Kept <str> IDENT, removed obsolete STRING */
-%token <str> IDENT 
-/* Removed obsolete NUMBER token */
-%token <i> TRUE FALSE
-%token DEF RETURN IF ELSE FOR WHILE BREAK CONTINUE NULLVAL
+%token <sval> IDENT
+%token <ival> TRUE FALSE
+%token DEF RETURN IF_TK ELSE_TK FOR WHILE BREAK CONTINUE NULLVAL
 %token IMAGE_TYPE INT_TYPE FLOAT_TYPE STRING_TYPE BOOL_TYPE
 %token PIPE_OP
-%token EQ NEQ GT LT GE LE ASSIGN PLUS MINUS MUL DIV MOD
+%token PLUS MINUS MUL DIV MOD
+%token PLUS_ASSIGN MINUS_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
 
-/* Type keywords (from your example) */
 %token INT_TK FLOAT_TK STRING_TK IMAGE_TK
+%token <ival> INT_LIT
+%token <fval> FLOAT_LIT
+%token <sval> STR_LIT
 
-/* New typed literal tokens (from your example) */
-%token <i> INT_LIT
-%token <num> FLOAT_LIT
-%token <str> STR_LIT
+%token LE_TK GE_TK EQ_TK
 
-/* --- END TOKEN DECLARATIONS --- */
+%right '='
+%right PLUS_ASSIGN MINUS_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
+%nonassoc EQ_TK
+%nonassoc '<' '>' LE_TK GE_TK
+%left PLUS MINUS
+%left MUL DIV MOD
+%left PIPE_OP
+%left ','
+%nonassoc ELSE_TK
+%nonassoc IFX
 
-
-%left PIPE_OP  /* Left-associative precedence for pipelines */
-%left ','      /* Left-associative for argument lists */
-%expect 1      /* Expect 1 harmless shift/reduce conflict (comma in lists) */
-
-/* Merged and cleaned %type declarations */
-%type <ast> program stmt_list stmt expr primary_expr assignment call block expr_list expr_list_opt params_list params_list_opt
-%type <ast> type declaration 
+%type <ast> program stmt_list stmt simple_stmt expr primary_expr assignment call block expr_list expr_list_opt params_list params_list_opt
+%type <ast> type declaration if_stmt
 
 %start program
 
 %%
 
-program: 
+program:
     stmt_list { root = $1; }
     ;
 
-/* This 'type' rule was already present in your file, as requested */
 type:
     INT_TK   { $$ = make_type_node(TYPE_INT); }
   | FLOAT_TK { $$ = make_type_node(TYPE_FLOAT); }
   | STRING_TK{ $$ = make_type_node(TYPE_STRING); }
   | IMAGE_TK { $$ = make_type_node(TYPE_IMAGE); }
   ;
-  
-/* --- FIXED RULE --- */
-declaration:
-    type IDENT ASSIGN expr ';' { /* <-- FIXED: Was '=' */
-        $$ = make_decl_node($1, $2, $4);
-    }
-  ;
-/* --- END FIXED RULE --- */
 
+declaration:
+    type IDENT '=' expr ';' { $$ = make_decl_node($1, $2, $4); }
+  ;
 
 stmt_list:
-    stmt { 
-        Ast **temp = malloc(sizeof(Ast *)); 
-        if (temp) { 
-            temp[0] = $1; 
-            $$ = make_block(temp, 1); 
-        } else { 
-            $$ = NULL; 
+    stmt {
+        Ast **temp = malloc(sizeof(Ast *));
+        if (temp) {
+            temp[0] = $1;
+            $$ = make_block(temp, 1);
+        } else {
+            $$ = NULL;
         }
     }
-    | stmt_list stmt { 
+  | stmt_list stmt {
         if ($1) {
-            Ast **new_stmts = realloc($1->block.stmts, sizeof(Ast *) * ($1->block.n + 1)); 
-            if (new_stmts) { 
+            Ast **new_stmts = realloc($1->block.stmts, sizeof(Ast *) * ($1->block.n + 1));
+            if (new_stmts) {
                 $1->block.stmts = new_stmts;
-                $1->block.stmts[$1->block.n++] = $2; 
-            } else {
-                $$ = $1;
+                $1->block.stmts[$1->block.n++] = $2;
             }
         }
-        $$ = $1; 
+        $$ = $1;
     }
-    ;
+  ;
+
+if_stmt:
+    IF_TK '(' expr ')' block %prec IFX { $$ = make_if($3, $5); }
+  | IF_TK '(' expr ')' block ELSE_TK if_stmt {
+      Ast **stmts = malloc(sizeof(Ast*));
+      stmts[0] = $7;
+      Ast *else_block = make_block(stmts, 1);
+      $$ = make_if_else($3, $5, else_block);
+    }
+  | IF_TK '(' expr ')' block ELSE_TK block { $$ = make_if_else($3, $5, $7); }
+  ;
 
 stmt:
-      declaration { $$ = $1; }  /* <-- ADDED: Allows declarations as statements */
+    block
+  | simple_stmt
+  | if_stmt
+  | WHILE '(' expr ')' block { $$ = make_while($3, $5); }
+  | FOR '(' assignment ';' expr ';' assignment ')' block { $$ = make_for($3, $5, $7, $9); }
+  | FOR '(' declaration expr ';' assignment ')' block { $$ = make_for($3, $4, $6, $8); }
+  ;
+
+simple_stmt:
+      declaration { $$ = $1; }
     | assignment ';'      { $$ = $1; }
     | expr ';'            { $$ = make_expr_stmt($1); }
     | RETURN expr ';'     { $$ = make_return($2); }
-    | IF '(' expr ')' block ELSE block { $$ = make_if_else($3, $5, $7); }
-    | IF '(' expr ')' block { $$ = make_if($3, $5); }
-    | WHILE '(' expr ')' block { $$ = make_while($3, $5); }
-    | FOR '(' assignment ';' expr ';' assignment ')' block { $$ = make_for($3, $5, $7, $9); }
     | BREAK ';'           { $$ = make_break(); }
     | CONTINUE ';'        { $$ = make_continue(); }
-    | DEF IDENT '(' params_list_opt ')' block { 
+    | DEF IDENT '(' params_list_opt ')' block {
         char **params = $4 ? $4->arg_list.args : NULL;
         int nparams = $4 ? $4->arg_list.nargs : 0;
-        $$ = make_func_def($2, params, nparams, $6); 
+        $$ = make_func_def($2, params, nparams, $6);
     }
-    ;
+  ;
 
 assignment:
-    IDENT ASSIGN expr { $$ = make_assign($1, $3); }
-    ;
+    IDENT '=' expr { $$ = make_assign($1, $3); }
+  | IDENT PLUS_ASSIGN expr  { Ast *i = make_ident($1); $$ = make_assign($1, make_binop_node(OP_ADD, i, $3)); }
+  | IDENT MINUS_ASSIGN expr { Ast *i = make_ident($1); $$ = make_assign($1, make_binop_node(OP_SUB, i, $3)); }
+  | IDENT MUL_ASSIGN expr   { Ast *i = make_ident($1); $$ = make_assign($1, make_binop_node(OP_MUL, i, $3)); }
+  | IDENT DIV_ASSIGN expr   { Ast *i = make_ident($1); $$ = make_assign($1, make_binop_node(OP_DIV, i, $3)); }
+  | IDENT MOD_ASSIGN expr   { Ast *i = make_ident($1); $$ = make_assign($1, make_binop_node(OP_MOD, i, $3)); }
+  ;
 
-/* --- EXPRESSION RULES (CLEANED) --- */
-
-/* 'expr' is for operators (like pipe) */
 expr:
       primary_expr { $$ = $1; }
     | expr PIPE_OP primary_expr { $$ = make_pipe($1, $3); }
+    | expr PLUS expr  { $$ = make_binop_node(OP_ADD, $1, $3); }
+    | expr MINUS expr { $$ = make_binop_node(OP_SUB, $1, $3); }
+    | expr MUL expr   { $$ = make_binop_node(OP_MUL, $1, $3); }
+    | expr DIV expr   { $$ = make_binop_node(OP_DIV, $1, $3); }
+    | expr MOD expr   { $$ = make_binop_node(OP_MOD, $1, $3); }
+    | expr '<' expr   { $$ = make_binop_node(OP_LT, $1, $3); }
+    | expr '>' expr   { $$ = make_binop_node(OP_GT, $1, $3); }
+    | expr LE_TK expr { $$ = make_binop_node(OP_LE, $1, $3); }
+    | expr GE_TK expr { $$ = make_binop_node(OP_GE, $1, $3); }
+    | expr EQ_TK expr { $$ = make_binop_node(OP_EQ, $1, $3); }
     ;
 
-/* 'primary_expr' is for terminals and calls */
 primary_expr:
-      INT_LIT   { $$ = make_int_literal($1); }    /* <-- ADDED from example */
-    | FLOAT_LIT { $$ = make_float_literal($1); }  /* <-- ADDED from example */
-    | STR_LIT   { $$ = make_string_literal($1); }  /* <-- ADDED from example */
-    | IDENT     { $$ = make_ident($1); }     /* <-- FIXED: was make_ident_node */
+      INT_LIT   { $$ = make_int_literal($1); }
+    | FLOAT_LIT { $$ = make_float_literal($1); }
+    | STR_LIT   { $$ = make_string_literal($1); }
+    | IDENT     { $$ = make_ident($1); }
     | call      { $$ = $1; }
-    /* Removed obsolete NUMBER and STRING rules */
+    | '(' expr ')' { $$ = $2; }
     ;
-
-/* --- END EXPRESSION RULES --- */
-
 
 call:
-    IDENT '(' expr_list_opt ')' { 
+    IDENT '(' expr_list_opt ')' {
         Ast **args = $3 ? $3->block.stmts : NULL;
         int nargs = $3 ? $3->block.n : 0;
-        $$ = make_call($1, args, nargs); 
+        $$ = make_call($1, args, nargs);
     }
     ;
 
 block:
     '{' stmt_list '}' { $$ = $2; }
-    | stmt { 
-        Ast **temp = malloc(sizeof(Ast *)); 
-        if (temp) { 
-            temp[0] = $1; 
-            $$ = make_block(temp, 1); 
-        } else { 
-            $$ = NULL; 
-        }
-    }
     ;
 
 expr_list:
-    expr { 
-        Ast **temp = malloc(sizeof(Ast *)); 
-        if (temp) { 
-            temp[0] = $1; 
-            $$ = make_block(temp, 1); 
-        } else { 
-            $$ = NULL; 
+    expr {
+        Ast **temp = malloc(sizeof(Ast *));
+        if (temp) {
+            temp[0] = $1;
+            $$ = make_block(temp, 1);
+        } else {
+            $$ = NULL;
         }
     }
-    | expr_list ',' expr { 
+  | expr_list ',' expr {
         if ($1) {
-            Ast **new_args = realloc($1->block.stmts, sizeof(Ast *) * ($1->block.n + 1)); 
-            if (new_args) { 
+            Ast **new_args = realloc($1->block.stmts, sizeof(Ast *) * ($1->block.n + 1));
+            if (new_args) {
                 $1->block.stmts = new_args;
-                $1->block.stmts[$1->block.n++] = $3; 
-            } else {
-                $$ = $1;  // Keep on failure
+                $1->block.stmts[$1->block.n++] = $3;
             }
         }
-        $$ = $1; 
+        $$ = $1;
     }
-    ;
+  ;
 
 expr_list_opt:
     expr_list { $$ = $1; }
-    | /* empty */ { $$ = NULL; }
-    ;
+  | /* empty */ { $$ = NULL; }
+  ;
 
 params_list:
     IDENT { $$ = make_arg_list($1); }
-    | params_list ',' IDENT { $$ = append_arg($1, $3); }
-    ;
+  | params_list ',' IDENT { $$ = append_arg($1, $3); }
+  ;
 
 params_list_opt:
     params_list { $$ = $1; }
-    | /* empty */ { $$ = NULL; }
-    ;
+  | /* empty */ { $$ = NULL; }
+  ;
 
 %%
 

@@ -1,0 +1,2300 @@
+Terminals unused in grammar
+
+    TRUE
+    FALSE
+    NULLVAL
+    IMAGE_TYPE
+    INT_TYPE
+    FLOAT_TYPE
+    STRING_TYPE
+    BOOL_TYPE
+
+
+Rules useless in parser due to conflicts
+
+   14 stmt: IF_TK '(' expr ')' stmt ELSE_TK stmt
+
+
+State 22 conflicts: 19 reduce/reduce
+State 47 conflicts: 19 reduce/reduce
+State 102 conflicts: 20 reduce/reduce
+State 105 conflicts: 20 reduce/reduce
+State 108 conflicts: 20 reduce/reduce
+State 112 conflicts: 20 reduce/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: stmt_list
+
+    2 type: INT_TK
+    3     | FLOAT_TK
+    4     | STRING_TK
+    5     | IMAGE_TK
+
+    6 declaration: type IDENT '=' expr ';'
+
+    7 stmt_list: stmt
+    8          | stmt_list stmt
+
+    9 stmt: declaration
+   10     | assignment ';'
+   11     | expr ';'
+   12     | RETURN expr ';'
+   13     | IF_TK '(' expr ')' stmt
+   14     | IF_TK '(' expr ')' stmt ELSE_TK stmt
+   15     | WHILE '(' expr ')' block
+   16     | FOR '(' assignment ';' expr ';' assignment ')' block
+   17     | BREAK ';'
+   18     | CONTINUE ';'
+   19     | DEF IDENT '(' params_list_opt ')' block
+   20     | block
+
+   21 assignment: IDENT '=' expr
+   22           | IDENT PLUS_ASSIGN expr
+   23           | IDENT MINUS_ASSIGN expr
+   24           | IDENT MUL_ASSIGN expr
+   25           | IDENT DIV_ASSIGN expr
+   26           | IDENT MOD_ASSIGN expr
+
+   27 expr: primary_expr
+   28     | expr PIPE_OP primary_expr
+   29     | expr PLUS expr
+   30     | expr MINUS expr
+   31     | expr MUL expr
+   32     | expr DIV expr
+   33     | expr MOD expr
+   34     | expr '<' expr
+   35     | expr '>' expr
+   36     | expr LE_TK expr
+   37     | expr GE_TK expr
+   38     | expr EQ_TK expr
+
+   39 primary_expr: INT_LIT
+   40             | FLOAT_LIT
+   41             | STR_LIT
+   42             | IDENT
+   43             | call
+   44             | '(' expr ')'
+
+   45 call: IDENT '(' expr_list_opt ')'
+
+   46 block: BLOCK_START stmt_list BLOCK_END
+   47      | stmt
+
+   48 expr_list: expr
+   49          | expr_list ',' expr
+
+   50 expr_list_opt: expr_list
+   51              | ε
+
+   52 params_list: IDENT
+   53            | params_list ',' IDENT
+
+   54 params_list_opt: params_list
+   55                | ε
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    '(' (40) 13 14 15 16 19 44 45
+    ')' (41) 13 14 15 16 19 44 45
+    ',' (44) 49 53
+    ';' (59) 6 10 11 12 16 17 18
+    '<' (60) 34
+    '=' (61) 6 21
+    '>' (62) 35
+    error (256)
+    IDENT <sval> (258) 6 19 21 22 23 24 25 26 42 45 52 53
+    TRUE <ival> (259)
+    FALSE <ival> (260)
+    DEF (261) 19
+    RETURN (262) 12
+    IF_TK (263) 13 14
+    ELSE_TK (264) 14
+    FOR (265) 16
+    WHILE (266) 15
+    BREAK (267) 17
+    CONTINUE (268) 18
+    NULLVAL (269)
+    IMAGE_TYPE (270)
+    INT_TYPE (271)
+    FLOAT_TYPE (272)
+    STRING_TYPE (273)
+    BOOL_TYPE (274)
+    PIPE_OP (275) 28
+    PLUS (276) 29
+    MINUS (277) 30
+    MUL (278) 31
+    DIV (279) 32
+    MOD (280) 33
+    PLUS_ASSIGN (281) 22
+    MINUS_ASSIGN (282) 23
+    MUL_ASSIGN (283) 24
+    DIV_ASSIGN (284) 25
+    MOD_ASSIGN (285) 26
+    INT_TK (286) 2
+    FLOAT_TK (287) 3
+    STRING_TK (288) 4
+    IMAGE_TK (289) 5
+    INT_LIT <ival> (290) 39
+    FLOAT_LIT <fval> (291) 40
+    STR_LIT <sval> (292) 41
+    BLOCK_START (293) 46
+    BLOCK_END (294) 46
+    LE_TK (295) 36
+    GE_TK (296) 37
+    EQ_TK (297) 38
+    IFX (298)
+
+
+Nonterminals, with rules where they appear
+
+    $accept (51)
+        on left: 0
+    program <ast> (52)
+        on left: 1
+        on right: 0
+    type <ast> (53)
+        on left: 2 3 4 5
+        on right: 6
+    declaration <ast> (54)
+        on left: 6
+        on right: 9
+    stmt_list <ast> (55)
+        on left: 7 8
+        on right: 1 8 46
+    stmt <ast> (56)
+        on left: 9 10 11 12 13 14 15 16 17 18 19 20
+        on right: 7 8 13 14 47
+    assignment <ast> (57)
+        on left: 21 22 23 24 25 26
+        on right: 10 16
+    expr <ast> (58)
+        on left: 27 28 29 30 31 32 33 34 35 36 37 38
+        on right: 6 11 12 13 14 15 16 21 22 23 24 25 26 28 29 30 31 32 33 34 35 36 37 38 44 48 49
+    primary_expr <ast> (59)
+        on left: 39 40 41 42 43 44
+        on right: 27 28
+    call <ast> (60)
+        on left: 45
+        on right: 43
+    block <ast> (61)
+        on left: 46 47
+        on right: 15 16 19 20
+    expr_list <ast> (62)
+        on left: 48 49
+        on right: 49 50
+    expr_list_opt <ast> (63)
+        on left: 50 51
+        on right: 45
+    params_list <ast> (64)
+        on left: 52 53
+        on right: 53 54
+    params_list_opt <ast> (65)
+        on left: 54 55
+        on right: 19
+
+
+State 0
+
+    0 $accept: • program $end
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    program       go to state 18
+    type          go to state 19
+    declaration   go to state 20
+    stmt_list     go to state 21
+    stmt          go to state 22
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 27
+
+
+State 1
+
+   21 assignment: IDENT • '=' expr
+   22           | IDENT • PLUS_ASSIGN expr
+   23           | IDENT • MINUS_ASSIGN expr
+   24           | IDENT • MUL_ASSIGN expr
+   25           | IDENT • DIV_ASSIGN expr
+   26           | IDENT • MOD_ASSIGN expr
+   42 primary_expr: IDENT •
+   45 call: IDENT • '(' expr_list_opt ')'
+
+    PLUS_ASSIGN   shift, and go to state 28
+    MINUS_ASSIGN  shift, and go to state 29
+    MUL_ASSIGN    shift, and go to state 30
+    DIV_ASSIGN    shift, and go to state 31
+    MOD_ASSIGN    shift, and go to state 32
+    '='           shift, and go to state 33
+    '('           shift, and go to state 34
+
+    $default  reduce using rule 42 (primary_expr)
+
+
+State 2
+
+   19 stmt: DEF • IDENT '(' params_list_opt ')' block
+
+    IDENT  shift, and go to state 35
+
+
+State 3
+
+   12 stmt: RETURN • expr ';'
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 37
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 4
+
+   13 stmt: IF_TK • '(' expr ')' stmt
+   14     | IF_TK • '(' expr ')' stmt ELSE_TK stmt
+
+    '('  shift, and go to state 38
+
+
+State 5
+
+   16 stmt: FOR • '(' assignment ';' expr ';' assignment ')' block
+
+    '('  shift, and go to state 39
+
+
+State 6
+
+   15 stmt: WHILE • '(' expr ')' block
+
+    '('  shift, and go to state 40
+
+
+State 7
+
+   17 stmt: BREAK • ';'
+
+    ';'  shift, and go to state 41
+
+
+State 8
+
+   18 stmt: CONTINUE • ';'
+
+    ';'  shift, and go to state 42
+
+
+State 9
+
+    2 type: INT_TK •
+
+    $default  reduce using rule 2 (type)
+
+
+State 10
+
+    3 type: FLOAT_TK •
+
+    $default  reduce using rule 3 (type)
+
+
+State 11
+
+    4 type: STRING_TK •
+
+    $default  reduce using rule 4 (type)
+
+
+State 12
+
+    5 type: IMAGE_TK •
+
+    $default  reduce using rule 5 (type)
+
+
+State 13
+
+   39 primary_expr: INT_LIT •
+
+    $default  reduce using rule 39 (primary_expr)
+
+
+State 14
+
+   40 primary_expr: FLOAT_LIT •
+
+    $default  reduce using rule 40 (primary_expr)
+
+
+State 15
+
+   41 primary_expr: STR_LIT •
+
+    $default  reduce using rule 41 (primary_expr)
+
+
+State 16
+
+   46 block: BLOCK_START • stmt_list BLOCK_END
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt_list     go to state 43
+    stmt          go to state 22
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 27
+
+
+State 17
+
+   44 primary_expr: '(' • expr ')'
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 44
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 18
+
+    0 $accept: program • $end
+
+    $end  shift, and go to state 45
+
+
+State 19
+
+    6 declaration: type • IDENT '=' expr ';'
+
+    IDENT  shift, and go to state 46
+
+
+State 20
+
+    9 stmt: declaration •
+
+    $default  reduce using rule 9 (stmt)
+
+
+State 21
+
+    1 program: stmt_list •
+    8 stmt_list: stmt_list • stmt
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    $default  reduce using rule 1 (program)
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 47
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 27
+
+
+State 22
+
+    7 stmt_list: stmt •
+   47 block: stmt •
+
+    $end         reduce using rule 7 (stmt_list)
+    $end         [reduce using rule 47 (block)]
+    IDENT        reduce using rule 7 (stmt_list)
+    IDENT        [reduce using rule 47 (block)]
+    DEF          reduce using rule 7 (stmt_list)
+    DEF          [reduce using rule 47 (block)]
+    RETURN       reduce using rule 7 (stmt_list)
+    RETURN       [reduce using rule 47 (block)]
+    IF_TK        reduce using rule 7 (stmt_list)
+    IF_TK        [reduce using rule 47 (block)]
+    FOR          reduce using rule 7 (stmt_list)
+    FOR          [reduce using rule 47 (block)]
+    WHILE        reduce using rule 7 (stmt_list)
+    WHILE        [reduce using rule 47 (block)]
+    BREAK        reduce using rule 7 (stmt_list)
+    BREAK        [reduce using rule 47 (block)]
+    CONTINUE     reduce using rule 7 (stmt_list)
+    CONTINUE     [reduce using rule 47 (block)]
+    INT_TK       reduce using rule 7 (stmt_list)
+    INT_TK       [reduce using rule 47 (block)]
+    FLOAT_TK     reduce using rule 7 (stmt_list)
+    FLOAT_TK     [reduce using rule 47 (block)]
+    STRING_TK    reduce using rule 7 (stmt_list)
+    STRING_TK    [reduce using rule 47 (block)]
+    IMAGE_TK     reduce using rule 7 (stmt_list)
+    IMAGE_TK     [reduce using rule 47 (block)]
+    INT_LIT      reduce using rule 7 (stmt_list)
+    INT_LIT      [reduce using rule 47 (block)]
+    FLOAT_LIT    reduce using rule 7 (stmt_list)
+    FLOAT_LIT    [reduce using rule 47 (block)]
+    STR_LIT      reduce using rule 7 (stmt_list)
+    STR_LIT      [reduce using rule 47 (block)]
+    BLOCK_START  reduce using rule 7 (stmt_list)
+    BLOCK_START  [reduce using rule 47 (block)]
+    BLOCK_END    reduce using rule 7 (stmt_list)
+    BLOCK_END    [reduce using rule 47 (block)]
+    '('          reduce using rule 7 (stmt_list)
+    '('          [reduce using rule 47 (block)]
+    $default     reduce using rule 7 (stmt_list)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+        7 stmt_list: stmt •
+       47 block: stmt •
+      Example: stmt •
+      First reduce derivation
+        stmt_list
+        ↳ 7: stmt •
+      Second reduce derivation
+        stmt_list
+        ↳ 7: stmt
+             ↳ 20: block
+                   ↳ 47: stmt •
+
+
+
+State 23
+
+   10 stmt: assignment • ';'
+
+    ';'  shift, and go to state 48
+
+
+State 24
+
+   11 stmt: expr • ';'
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ';'      shift, and go to state 60
+
+
+State 25
+
+   27 expr: primary_expr •
+
+    $default  reduce using rule 27 (expr)
+
+
+State 26
+
+   43 primary_expr: call •
+
+    $default  reduce using rule 43 (primary_expr)
+
+
+State 27
+
+   20 stmt: block •
+
+    $default  reduce using rule 20 (stmt)
+
+
+State 28
+
+   22 assignment: IDENT PLUS_ASSIGN • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 61
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 29
+
+   23 assignment: IDENT MINUS_ASSIGN • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 62
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 30
+
+   24 assignment: IDENT MUL_ASSIGN • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 63
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 31
+
+   25 assignment: IDENT DIV_ASSIGN • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 64
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 32
+
+   26 assignment: IDENT MOD_ASSIGN • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 65
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 33
+
+   21 assignment: IDENT '=' • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 66
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 34
+
+   45 call: IDENT '(' • expr_list_opt ')'
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    $default  reduce using rule 51 (expr_list_opt)
+
+    expr           go to state 67
+    primary_expr   go to state 25
+    call           go to state 26
+    expr_list      go to state 68
+    expr_list_opt  go to state 69
+
+
+State 35
+
+   19 stmt: DEF IDENT • '(' params_list_opt ')' block
+
+    '('  shift, and go to state 70
+
+
+State 36
+
+   42 primary_expr: IDENT •
+   45 call: IDENT • '(' expr_list_opt ')'
+
+    '('  shift, and go to state 34
+
+    $default  reduce using rule 42 (primary_expr)
+
+
+State 37
+
+   12 stmt: RETURN expr • ';'
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ';'      shift, and go to state 71
+
+
+State 38
+
+   13 stmt: IF_TK '(' • expr ')' stmt
+   14     | IF_TK '(' • expr ')' stmt ELSE_TK stmt
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 72
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 39
+
+   16 stmt: FOR '(' • assignment ';' expr ';' assignment ')' block
+
+    IDENT  shift, and go to state 73
+
+    assignment  go to state 74
+
+
+State 40
+
+   15 stmt: WHILE '(' • expr ')' block
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 75
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 41
+
+   17 stmt: BREAK ';' •
+
+    $default  reduce using rule 17 (stmt)
+
+
+State 42
+
+   18 stmt: CONTINUE ';' •
+
+    $default  reduce using rule 18 (stmt)
+
+
+State 43
+
+    8 stmt_list: stmt_list • stmt
+   46 block: BLOCK_START stmt_list • BLOCK_END
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    BLOCK_END    shift, and go to state 76
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 47
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 27
+
+
+State 44
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+   44 primary_expr: '(' expr • ')'
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ')'      shift, and go to state 77
+
+
+State 45
+
+    0 $accept: program $end •
+
+    $default  accept
+
+
+State 46
+
+    6 declaration: type IDENT • '=' expr ';'
+
+    '='  shift, and go to state 78
+
+
+State 47
+
+    8 stmt_list: stmt_list stmt •
+   47 block: stmt •
+
+    $end         reduce using rule 8 (stmt_list)
+    $end         [reduce using rule 47 (block)]
+    IDENT        reduce using rule 8 (stmt_list)
+    IDENT        [reduce using rule 47 (block)]
+    DEF          reduce using rule 8 (stmt_list)
+    DEF          [reduce using rule 47 (block)]
+    RETURN       reduce using rule 8 (stmt_list)
+    RETURN       [reduce using rule 47 (block)]
+    IF_TK        reduce using rule 8 (stmt_list)
+    IF_TK        [reduce using rule 47 (block)]
+    FOR          reduce using rule 8 (stmt_list)
+    FOR          [reduce using rule 47 (block)]
+    WHILE        reduce using rule 8 (stmt_list)
+    WHILE        [reduce using rule 47 (block)]
+    BREAK        reduce using rule 8 (stmt_list)
+    BREAK        [reduce using rule 47 (block)]
+    CONTINUE     reduce using rule 8 (stmt_list)
+    CONTINUE     [reduce using rule 47 (block)]
+    INT_TK       reduce using rule 8 (stmt_list)
+    INT_TK       [reduce using rule 47 (block)]
+    FLOAT_TK     reduce using rule 8 (stmt_list)
+    FLOAT_TK     [reduce using rule 47 (block)]
+    STRING_TK    reduce using rule 8 (stmt_list)
+    STRING_TK    [reduce using rule 47 (block)]
+    IMAGE_TK     reduce using rule 8 (stmt_list)
+    IMAGE_TK     [reduce using rule 47 (block)]
+    INT_LIT      reduce using rule 8 (stmt_list)
+    INT_LIT      [reduce using rule 47 (block)]
+    FLOAT_LIT    reduce using rule 8 (stmt_list)
+    FLOAT_LIT    [reduce using rule 47 (block)]
+    STR_LIT      reduce using rule 8 (stmt_list)
+    STR_LIT      [reduce using rule 47 (block)]
+    BLOCK_START  reduce using rule 8 (stmt_list)
+    BLOCK_START  [reduce using rule 47 (block)]
+    BLOCK_END    reduce using rule 8 (stmt_list)
+    BLOCK_END    [reduce using rule 47 (block)]
+    '('          reduce using rule 8 (stmt_list)
+    '('          [reduce using rule 47 (block)]
+    $default     reduce using rule 8 (stmt_list)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+        8 stmt_list: stmt_list stmt •
+       47 block: stmt •
+      Example: stmt_list stmt •
+      First reduce derivation
+        stmt_list
+        ↳ 8: stmt_list stmt •
+      Second reduce derivation
+        stmt_list
+        ↳ 8: stmt_list stmt
+                       ↳ 20: block
+                             ↳ 47: stmt •
+
+
+
+State 48
+
+   10 stmt: assignment ';' •
+
+    $default  reduce using rule 10 (stmt)
+
+
+State 49
+
+   28 expr: expr PIPE_OP • primary_expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    primary_expr  go to state 79
+    call          go to state 26
+
+
+State 50
+
+   29 expr: expr PLUS • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 80
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 51
+
+   30 expr: expr MINUS • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 81
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 52
+
+   31 expr: expr MUL • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 82
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 53
+
+   32 expr: expr DIV • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 83
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 54
+
+   33 expr: expr MOD • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 84
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 55
+
+   36 expr: expr LE_TK • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 85
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 56
+
+   37 expr: expr GE_TK • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 86
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 57
+
+   38 expr: expr EQ_TK • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 87
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 58
+
+   34 expr: expr '<' • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 88
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 59
+
+   35 expr: expr '>' • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 89
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 60
+
+   11 stmt: expr ';' •
+
+    $default  reduce using rule 11 (stmt)
+
+
+State 61
+
+   22 assignment: IDENT PLUS_ASSIGN expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 22 (assignment)
+
+
+State 62
+
+   23 assignment: IDENT MINUS_ASSIGN expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 23 (assignment)
+
+
+State 63
+
+   24 assignment: IDENT MUL_ASSIGN expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 24 (assignment)
+
+
+State 64
+
+   25 assignment: IDENT DIV_ASSIGN expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 25 (assignment)
+
+
+State 65
+
+   26 assignment: IDENT MOD_ASSIGN expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 26 (assignment)
+
+
+State 66
+
+   21 assignment: IDENT '=' expr •
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 21 (assignment)
+
+
+State 67
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+   48 expr_list: expr •
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 48 (expr_list)
+
+
+State 68
+
+   49 expr_list: expr_list • ',' expr
+   50 expr_list_opt: expr_list •
+
+    ','  shift, and go to state 90
+
+    $default  reduce using rule 50 (expr_list_opt)
+
+
+State 69
+
+   45 call: IDENT '(' expr_list_opt • ')'
+
+    ')'  shift, and go to state 91
+
+
+State 70
+
+   19 stmt: DEF IDENT '(' • params_list_opt ')' block
+
+    IDENT  shift, and go to state 92
+
+    $default  reduce using rule 55 (params_list_opt)
+
+    params_list      go to state 93
+    params_list_opt  go to state 94
+
+
+State 71
+
+   12 stmt: RETURN expr ';' •
+
+    $default  reduce using rule 12 (stmt)
+
+
+State 72
+
+   13 stmt: IF_TK '(' expr • ')' stmt
+   14     | IF_TK '(' expr • ')' stmt ELSE_TK stmt
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ')'      shift, and go to state 95
+
+
+State 73
+
+   21 assignment: IDENT • '=' expr
+   22           | IDENT • PLUS_ASSIGN expr
+   23           | IDENT • MINUS_ASSIGN expr
+   24           | IDENT • MUL_ASSIGN expr
+   25           | IDENT • DIV_ASSIGN expr
+   26           | IDENT • MOD_ASSIGN expr
+
+    PLUS_ASSIGN   shift, and go to state 28
+    MINUS_ASSIGN  shift, and go to state 29
+    MUL_ASSIGN    shift, and go to state 30
+    DIV_ASSIGN    shift, and go to state 31
+    MOD_ASSIGN    shift, and go to state 32
+    '='           shift, and go to state 33
+
+
+State 74
+
+   16 stmt: FOR '(' assignment • ';' expr ';' assignment ')' block
+
+    ';'  shift, and go to state 96
+
+
+State 75
+
+   15 stmt: WHILE '(' expr • ')' block
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ')'      shift, and go to state 97
+
+
+State 76
+
+   46 block: BLOCK_START stmt_list BLOCK_END •
+
+    $default  reduce using rule 46 (block)
+
+
+State 77
+
+   44 primary_expr: '(' expr ')' •
+
+    $default  reduce using rule 44 (primary_expr)
+
+
+State 78
+
+    6 declaration: type IDENT '=' • expr ';'
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 98
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 79
+
+   28 expr: expr PIPE_OP primary_expr •
+
+    $default  reduce using rule 28 (expr)
+
+
+State 80
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   29     | expr PLUS expr •
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 29 (expr)
+
+
+State 81
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   30     | expr MINUS expr •
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 30 (expr)
+
+
+State 82
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   31     | expr MUL expr •
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 31 (expr)
+
+
+State 83
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   32     | expr DIV expr •
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 32 (expr)
+
+
+State 84
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   33     | expr MOD expr •
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 33 (expr)
+
+
+State 85
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   36     | expr LE_TK expr •
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    EQ_TK    shift, and go to state 57
+
+    LE_TK  error (nonassociative)
+    GE_TK  error (nonassociative)
+    '<'    error (nonassociative)
+    '>'    error (nonassociative)
+
+    $default  reduce using rule 36 (expr)
+
+
+State 86
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   37     | expr GE_TK expr •
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    EQ_TK    shift, and go to state 57
+
+    LE_TK  error (nonassociative)
+    GE_TK  error (nonassociative)
+    '<'    error (nonassociative)
+    '>'    error (nonassociative)
+
+    $default  reduce using rule 37 (expr)
+
+
+State 87
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+   38     | expr EQ_TK expr •
+
+    PIPE_OP  shift, and go to state 49
+
+    EQ_TK  error (nonassociative)
+
+    $default  reduce using rule 38 (expr)
+
+
+State 88
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   34     | expr '<' expr •
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    EQ_TK    shift, and go to state 57
+
+    LE_TK  error (nonassociative)
+    GE_TK  error (nonassociative)
+    '<'    error (nonassociative)
+    '>'    error (nonassociative)
+
+    $default  reduce using rule 34 (expr)
+
+
+State 89
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   35     | expr '>' expr •
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    EQ_TK    shift, and go to state 57
+
+    LE_TK  error (nonassociative)
+    GE_TK  error (nonassociative)
+    '<'    error (nonassociative)
+    '>'    error (nonassociative)
+
+    $default  reduce using rule 35 (expr)
+
+
+State 90
+
+   49 expr_list: expr_list ',' • expr
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 99
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 91
+
+   45 call: IDENT '(' expr_list_opt ')' •
+
+    $default  reduce using rule 45 (call)
+
+
+State 92
+
+   52 params_list: IDENT •
+
+    $default  reduce using rule 52 (params_list)
+
+
+State 93
+
+   53 params_list: params_list • ',' IDENT
+   54 params_list_opt: params_list •
+
+    ','  shift, and go to state 100
+
+    $default  reduce using rule 54 (params_list_opt)
+
+
+State 94
+
+   19 stmt: DEF IDENT '(' params_list_opt • ')' block
+
+    ')'  shift, and go to state 101
+
+
+State 95
+
+   13 stmt: IF_TK '(' expr ')' • stmt
+   14     | IF_TK '(' expr ')' • stmt ELSE_TK stmt
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 102
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 27
+
+
+State 96
+
+   16 stmt: FOR '(' assignment ';' • expr ';' assignment ')' block
+
+    IDENT      shift, and go to state 36
+    INT_LIT    shift, and go to state 13
+    FLOAT_LIT  shift, and go to state 14
+    STR_LIT    shift, and go to state 15
+    '('        shift, and go to state 17
+
+    expr          go to state 103
+    primary_expr  go to state 25
+    call          go to state 26
+
+
+State 97
+
+   15 stmt: WHILE '(' expr ')' • block
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 104
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 105
+
+
+State 98
+
+    6 declaration: type IDENT '=' expr • ';'
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ';'      shift, and go to state 106
+
+
+State 99
+
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+   49 expr_list: expr_list ',' expr •
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+
+    $default  reduce using rule 49 (expr_list)
+
+
+State 100
+
+   53 params_list: params_list ',' • IDENT
+
+    IDENT  shift, and go to state 107
+
+
+State 101
+
+   19 stmt: DEF IDENT '(' params_list_opt ')' • block
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 104
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 108
+
+
+State 102
+
+   13 stmt: IF_TK '(' expr ')' stmt •
+   14     | IF_TK '(' expr ')' stmt • ELSE_TK stmt
+   47 block: stmt •
+
+    $end         reduce using rule 13 (stmt)
+    $end         [reduce using rule 47 (block)]
+    IDENT        reduce using rule 13 (stmt)
+    IDENT        [reduce using rule 47 (block)]
+    DEF          reduce using rule 13 (stmt)
+    DEF          [reduce using rule 47 (block)]
+    RETURN       reduce using rule 13 (stmt)
+    RETURN       [reduce using rule 47 (block)]
+    IF_TK        reduce using rule 13 (stmt)
+    IF_TK        [reduce using rule 47 (block)]
+    ELSE_TK      reduce using rule 13 (stmt)
+    ELSE_TK      [reduce using rule 47 (block)]
+    FOR          reduce using rule 13 (stmt)
+    FOR          [reduce using rule 47 (block)]
+    WHILE        reduce using rule 13 (stmt)
+    WHILE        [reduce using rule 47 (block)]
+    BREAK        reduce using rule 13 (stmt)
+    BREAK        [reduce using rule 47 (block)]
+    CONTINUE     reduce using rule 13 (stmt)
+    CONTINUE     [reduce using rule 47 (block)]
+    INT_TK       reduce using rule 13 (stmt)
+    INT_TK       [reduce using rule 47 (block)]
+    FLOAT_TK     reduce using rule 13 (stmt)
+    FLOAT_TK     [reduce using rule 47 (block)]
+    STRING_TK    reduce using rule 13 (stmt)
+    STRING_TK    [reduce using rule 47 (block)]
+    IMAGE_TK     reduce using rule 13 (stmt)
+    IMAGE_TK     [reduce using rule 47 (block)]
+    INT_LIT      reduce using rule 13 (stmt)
+    INT_LIT      [reduce using rule 47 (block)]
+    FLOAT_LIT    reduce using rule 13 (stmt)
+    FLOAT_LIT    [reduce using rule 47 (block)]
+    STR_LIT      reduce using rule 13 (stmt)
+    STR_LIT      [reduce using rule 47 (block)]
+    BLOCK_START  reduce using rule 13 (stmt)
+    BLOCK_START  [reduce using rule 47 (block)]
+    BLOCK_END    reduce using rule 13 (stmt)
+    BLOCK_END    [reduce using rule 47 (block)]
+    '('          reduce using rule 13 (stmt)
+    '('          [reduce using rule 47 (block)]
+    $default     reduce using rule 13 (stmt)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, ELSE_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+       13 stmt: IF_TK '(' expr ')' stmt •
+       47 block: stmt •
+      Example: IF_TK '(' expr ')' stmt •
+      First reduce derivation
+        stmt
+        ↳ 13: IF_TK '(' expr ')' stmt •
+      Second reduce derivation
+        stmt
+        ↳ 13: IF_TK '(' expr ')' stmt
+                                 ↳ 20: block
+                                       ↳ 47: stmt •
+
+
+
+State 103
+
+   16 stmt: FOR '(' assignment ';' expr • ';' assignment ')' block
+   28 expr: expr • PIPE_OP primary_expr
+   29     | expr • PLUS expr
+   30     | expr • MINUS expr
+   31     | expr • MUL expr
+   32     | expr • DIV expr
+   33     | expr • MOD expr
+   34     | expr • '<' expr
+   35     | expr • '>' expr
+   36     | expr • LE_TK expr
+   37     | expr • GE_TK expr
+   38     | expr • EQ_TK expr
+
+    PIPE_OP  shift, and go to state 49
+    PLUS     shift, and go to state 50
+    MINUS    shift, and go to state 51
+    MUL      shift, and go to state 52
+    DIV      shift, and go to state 53
+    MOD      shift, and go to state 54
+    LE_TK    shift, and go to state 55
+    GE_TK    shift, and go to state 56
+    EQ_TK    shift, and go to state 57
+    '<'      shift, and go to state 58
+    '>'      shift, and go to state 59
+    ';'      shift, and go to state 109
+
+
+State 104
+
+   47 block: stmt •
+
+    $default  reduce using rule 47 (block)
+
+
+State 105
+
+   15 stmt: WHILE '(' expr ')' block •
+   20     | block •
+
+    $end         reduce using rule 15 (stmt)
+    $end         [reduce using rule 20 (stmt)]
+    IDENT        reduce using rule 15 (stmt)
+    IDENT        [reduce using rule 20 (stmt)]
+    DEF          reduce using rule 15 (stmt)
+    DEF          [reduce using rule 20 (stmt)]
+    RETURN       reduce using rule 15 (stmt)
+    RETURN       [reduce using rule 20 (stmt)]
+    IF_TK        reduce using rule 15 (stmt)
+    IF_TK        [reduce using rule 20 (stmt)]
+    ELSE_TK      reduce using rule 15 (stmt)
+    ELSE_TK      [reduce using rule 20 (stmt)]
+    FOR          reduce using rule 15 (stmt)
+    FOR          [reduce using rule 20 (stmt)]
+    WHILE        reduce using rule 15 (stmt)
+    WHILE        [reduce using rule 20 (stmt)]
+    BREAK        reduce using rule 15 (stmt)
+    BREAK        [reduce using rule 20 (stmt)]
+    CONTINUE     reduce using rule 15 (stmt)
+    CONTINUE     [reduce using rule 20 (stmt)]
+    INT_TK       reduce using rule 15 (stmt)
+    INT_TK       [reduce using rule 20 (stmt)]
+    FLOAT_TK     reduce using rule 15 (stmt)
+    FLOAT_TK     [reduce using rule 20 (stmt)]
+    STRING_TK    reduce using rule 15 (stmt)
+    STRING_TK    [reduce using rule 20 (stmt)]
+    IMAGE_TK     reduce using rule 15 (stmt)
+    IMAGE_TK     [reduce using rule 20 (stmt)]
+    INT_LIT      reduce using rule 15 (stmt)
+    INT_LIT      [reduce using rule 20 (stmt)]
+    FLOAT_LIT    reduce using rule 15 (stmt)
+    FLOAT_LIT    [reduce using rule 20 (stmt)]
+    STR_LIT      reduce using rule 15 (stmt)
+    STR_LIT      [reduce using rule 20 (stmt)]
+    BLOCK_START  reduce using rule 15 (stmt)
+    BLOCK_START  [reduce using rule 20 (stmt)]
+    BLOCK_END    reduce using rule 15 (stmt)
+    BLOCK_END    [reduce using rule 20 (stmt)]
+    '('          reduce using rule 15 (stmt)
+    '('          [reduce using rule 20 (stmt)]
+    $default     reduce using rule 15 (stmt)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, ELSE_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+       15 stmt: WHILE '(' expr ')' block •
+       20 stmt: block •
+      Example: WHILE '(' expr ')' block •
+      First reduce derivation
+        stmt
+        ↳ 15: WHILE '(' expr ')' block •
+      Second reduce derivation
+        stmt
+        ↳ 15: WHILE '(' expr ')' block
+                                 ↳ 47: stmt
+                                       ↳ 20: block •
+
+
+
+State 106
+
+    6 declaration: type IDENT '=' expr ';' •
+
+    $default  reduce using rule 6 (declaration)
+
+
+State 107
+
+   53 params_list: params_list ',' IDENT •
+
+    $default  reduce using rule 53 (params_list)
+
+
+State 108
+
+   19 stmt: DEF IDENT '(' params_list_opt ')' block •
+   20     | block •
+
+    $end         reduce using rule 19 (stmt)
+    $end         [reduce using rule 20 (stmt)]
+    IDENT        reduce using rule 19 (stmt)
+    IDENT        [reduce using rule 20 (stmt)]
+    DEF          reduce using rule 19 (stmt)
+    DEF          [reduce using rule 20 (stmt)]
+    RETURN       reduce using rule 19 (stmt)
+    RETURN       [reduce using rule 20 (stmt)]
+    IF_TK        reduce using rule 19 (stmt)
+    IF_TK        [reduce using rule 20 (stmt)]
+    ELSE_TK      reduce using rule 19 (stmt)
+    ELSE_TK      [reduce using rule 20 (stmt)]
+    FOR          reduce using rule 19 (stmt)
+    FOR          [reduce using rule 20 (stmt)]
+    WHILE        reduce using rule 19 (stmt)
+    WHILE        [reduce using rule 20 (stmt)]
+    BREAK        reduce using rule 19 (stmt)
+    BREAK        [reduce using rule 20 (stmt)]
+    CONTINUE     reduce using rule 19 (stmt)
+    CONTINUE     [reduce using rule 20 (stmt)]
+    INT_TK       reduce using rule 19 (stmt)
+    INT_TK       [reduce using rule 20 (stmt)]
+    FLOAT_TK     reduce using rule 19 (stmt)
+    FLOAT_TK     [reduce using rule 20 (stmt)]
+    STRING_TK    reduce using rule 19 (stmt)
+    STRING_TK    [reduce using rule 20 (stmt)]
+    IMAGE_TK     reduce using rule 19 (stmt)
+    IMAGE_TK     [reduce using rule 20 (stmt)]
+    INT_LIT      reduce using rule 19 (stmt)
+    INT_LIT      [reduce using rule 20 (stmt)]
+    FLOAT_LIT    reduce using rule 19 (stmt)
+    FLOAT_LIT    [reduce using rule 20 (stmt)]
+    STR_LIT      reduce using rule 19 (stmt)
+    STR_LIT      [reduce using rule 20 (stmt)]
+    BLOCK_START  reduce using rule 19 (stmt)
+    BLOCK_START  [reduce using rule 20 (stmt)]
+    BLOCK_END    reduce using rule 19 (stmt)
+    BLOCK_END    [reduce using rule 20 (stmt)]
+    '('          reduce using rule 19 (stmt)
+    '('          [reduce using rule 20 (stmt)]
+    $default     reduce using rule 19 (stmt)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, ELSE_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+       19 stmt: DEF IDENT '(' params_list_opt ')' block •
+       20 stmt: block •
+      Example: DEF IDENT '(' params_list_opt ')' block •
+      First reduce derivation
+        stmt
+        ↳ 19: DEF IDENT '(' params_list_opt ')' block •
+      Second reduce derivation
+        stmt
+        ↳ 19: DEF IDENT '(' params_list_opt ')' block
+                                                ↳ 47: stmt
+                                                      ↳ 20: block •
+
+
+
+State 109
+
+   16 stmt: FOR '(' assignment ';' expr ';' • assignment ')' block
+
+    IDENT  shift, and go to state 73
+
+    assignment  go to state 110
+
+
+State 110
+
+   16 stmt: FOR '(' assignment ';' expr ';' assignment • ')' block
+
+    ')'  shift, and go to state 111
+
+
+State 111
+
+   16 stmt: FOR '(' assignment ';' expr ';' assignment ')' • block
+
+    IDENT        shift, and go to state 1
+    DEF          shift, and go to state 2
+    RETURN       shift, and go to state 3
+    IF_TK        shift, and go to state 4
+    FOR          shift, and go to state 5
+    WHILE        shift, and go to state 6
+    BREAK        shift, and go to state 7
+    CONTINUE     shift, and go to state 8
+    INT_TK       shift, and go to state 9
+    FLOAT_TK     shift, and go to state 10
+    STRING_TK    shift, and go to state 11
+    IMAGE_TK     shift, and go to state 12
+    INT_LIT      shift, and go to state 13
+    FLOAT_LIT    shift, and go to state 14
+    STR_LIT      shift, and go to state 15
+    BLOCK_START  shift, and go to state 16
+    '('          shift, and go to state 17
+
+    type          go to state 19
+    declaration   go to state 20
+    stmt          go to state 104
+    assignment    go to state 23
+    expr          go to state 24
+    primary_expr  go to state 25
+    call          go to state 26
+    block         go to state 112
+
+
+State 112
+
+   16 stmt: FOR '(' assignment ';' expr ';' assignment ')' block •
+   20     | block •
+
+    $end         reduce using rule 16 (stmt)
+    $end         [reduce using rule 20 (stmt)]
+    IDENT        reduce using rule 16 (stmt)
+    IDENT        [reduce using rule 20 (stmt)]
+    DEF          reduce using rule 16 (stmt)
+    DEF          [reduce using rule 20 (stmt)]
+    RETURN       reduce using rule 16 (stmt)
+    RETURN       [reduce using rule 20 (stmt)]
+    IF_TK        reduce using rule 16 (stmt)
+    IF_TK        [reduce using rule 20 (stmt)]
+    ELSE_TK      reduce using rule 16 (stmt)
+    ELSE_TK      [reduce using rule 20 (stmt)]
+    FOR          reduce using rule 16 (stmt)
+    FOR          [reduce using rule 20 (stmt)]
+    WHILE        reduce using rule 16 (stmt)
+    WHILE        [reduce using rule 20 (stmt)]
+    BREAK        reduce using rule 16 (stmt)
+    BREAK        [reduce using rule 20 (stmt)]
+    CONTINUE     reduce using rule 16 (stmt)
+    CONTINUE     [reduce using rule 20 (stmt)]
+    INT_TK       reduce using rule 16 (stmt)
+    INT_TK       [reduce using rule 20 (stmt)]
+    FLOAT_TK     reduce using rule 16 (stmt)
+    FLOAT_TK     [reduce using rule 20 (stmt)]
+    STRING_TK    reduce using rule 16 (stmt)
+    STRING_TK    [reduce using rule 20 (stmt)]
+    IMAGE_TK     reduce using rule 16 (stmt)
+    IMAGE_TK     [reduce using rule 20 (stmt)]
+    INT_LIT      reduce using rule 16 (stmt)
+    INT_LIT      [reduce using rule 20 (stmt)]
+    FLOAT_LIT    reduce using rule 16 (stmt)
+    FLOAT_LIT    [reduce using rule 20 (stmt)]
+    STR_LIT      reduce using rule 16 (stmt)
+    STR_LIT      [reduce using rule 20 (stmt)]
+    BLOCK_START  reduce using rule 16 (stmt)
+    BLOCK_START  [reduce using rule 20 (stmt)]
+    BLOCK_END    reduce using rule 16 (stmt)
+    BLOCK_END    [reduce using rule 20 (stmt)]
+    '('          reduce using rule 16 (stmt)
+    '('          [reduce using rule 20 (stmt)]
+    $default     reduce using rule 16 (stmt)
+
+    reduce/reduce conflict on tokens $end, IDENT, DEF, RETURN, IF_TK, ELSE_TK, FOR, WHILE, BREAK, CONTINUE, INT_TK, FLOAT_TK, STRING_TK, IMAGE_TK, INT_LIT, FLOAT_LIT, STR_LIT, BLOCK_START, BLOCK_END, '(':
+       16 stmt: FOR '(' assignment ';' expr ';' assignment ')' block •
+       20 stmt: block •
+      Example: FOR '(' assignment ';' expr ';' assignment ')' block •
+      First reduce derivation
+        stmt
+        ↳ 16: FOR '(' assignment ';' expr ';' assignment ')' block •
+      Second reduce derivation
+        stmt
+        ↳ 16: FOR '(' assignment ';' expr ';' assignment ')' block
+                                                             ↳ 47: stmt
+                                                                   ↳ 20: block •
+
