@@ -428,6 +428,22 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
     return result;
 }
 
+void eval_block(Ast *block) {
+    if (!block) {
+        runtime_error("eval_block: received NULL block");
+        return;
+    }
+    if (block->type != AST_BLOCK) {
+        runtime_error("eval_block: expected AST_BLOCK, got %d", block->type);
+        return;
+    }
+
+    // Loop through and evaluate each statement in the block
+    for (int i = 0; i < block->block.n; i++) {
+        eval_stmt(block->block.stmts[i]);
+    }
+}
+
 void eval_stmt(Ast *stmt) {
     if (!stmt) return;
 
@@ -478,6 +494,69 @@ void eval_stmt(Ast *stmt) {
             // Evaluate expression and free the result
             Value val = eval_expr(stmt->expr_stmt.expr);
             free_value(val);
+            break;
+        }
+        case AST_IF: {
+            Value cond_val = eval_expr(stmt->if_stmt.cond);
+            
+            int is_true = value_to_int(cond_val);
+            
+            free_value(cond_val);
+
+            if (is_true) {
+                eval_block(stmt->if_stmt.block);
+            }
+            break;
+        }
+
+        case AST_IF_ELSE: {
+            Value cond_val = eval_expr(stmt->if_else_stmt.cond);
+            
+            int is_true = value_to_int(cond_val);
+            
+            free_value(cond_val);
+
+            if (is_true) {
+                eval_block(stmt->if_else_stmt.then_block);
+            } else {
+                eval_block(stmt->if_else_stmt.else_block);
+            }
+            break;
+        }
+
+        case AST_WHILE: {
+            while (1) {
+                Value cond_val = eval_expr(stmt->while_stmt.cond);
+                int is_true = value_to_int(cond_val);
+                free_value(cond_val);
+
+                if (!is_true) {
+                    break;
+                }
+                eval_block(stmt->while_stmt.block);
+            }
+            break;
+        }
+
+        case AST_FOR: {
+            if (stmt->for_stmt.init) {
+                eval_stmt(stmt->for_stmt.init);
+            }
+
+            while (1) {
+                Value cond_val = eval_expr(stmt->for_stmt.cond);
+                int is_true = value_to_int(cond_val);
+            
+                free_value(cond_val);
+
+                if (!is_true) {
+                    break;
+                }
+                eval_block(stmt->for_stmt.block);
+                if (stmt->for_stmt.update) {
+                    eval_stmt(stmt->for_stmt.update);
+                }
+            }
             break;
         }
 

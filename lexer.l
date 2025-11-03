@@ -74,6 +74,7 @@ ID [a-zA-Z_][a-zA-Z0-9_]*
 
 
 [ \t\n\r]+ {  }
+"#".* { /* comments */ }
 ";" { return ';'; }
 "," { return ','; }
 "(" { return '('; }

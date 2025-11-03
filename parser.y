@@ -64,13 +64,11 @@ type:
   | IMAGE_TK { $$ = make_type_node(TYPE_IMAGE); }
   ;
   
-/* --- FIXED RULE --- */
 declaration:
-    type IDENT ASSIGN expr ';' { /* <-- FIXED: Was '=' */
+    type IDENT ASSIGN expr { 
         $$ = make_decl_node($1, $2, $4);
     }
   ;
-/* --- END FIXED RULE --- */
 
 
 stmt_list:
@@ -98,13 +96,14 @@ stmt_list:
     ;
 
 stmt:
-      declaration { $$ = $1; }  /* <-- ADDED: Allows declarations as statements */
+      declaration ';' { $$ = $1; } 
     | assignment ';'      { $$ = $1; }
     | expr ';'            { $$ = make_expr_stmt($1); }
     | RETURN expr ';'     { $$ = make_return($2); }
     | IF '(' expr ')' block ELSE block { $$ = make_if_else($3, $5, $7); }
     | IF '(' expr ')' block { $$ = make_if($3, $5); }
     | WHILE '(' expr ')' block { $$ = make_while($3, $5); }
+    | FOR '(' declaration ';' expr ';' assignment ')' block { $$ = make_for($3, $5, $7, $9); }
     | FOR '(' assignment ';' expr ';' assignment ')' block { $$ = make_for($3, $5, $7, $9); }
     | BREAK ';'           { $$ = make_break(); }
     | CONTINUE ';'        { $$ = make_continue(); }
