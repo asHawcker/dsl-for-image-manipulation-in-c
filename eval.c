@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h> // For runtime_error
+#include "parser.tab.h"
 
 // --- NEW SYMBOL TABLE (uses Value) ---
 
@@ -392,8 +393,17 @@ Value eval_builtin_call(const char *fname, Value *args, int nargs) {
                 case V_IMAGE:
                     printf("<Image %dx%d>", args[i].u.img->width, args[i].u.img->height);
                     break;
-                default:
+                case V_INT:
+                    printf("%d", args[i].u.ival);
+                    break;
+                case V_FLOAT:
+                    printf("%f", args[i].u.fval);
+                    break;
+                case V_STRING:
                     print_string_escaped(args[i].u.sval);
+                    break;
+                default:
+                    printf("<unknown_type>");
                     break;
             }
             
@@ -538,6 +548,99 @@ Value eval_expr(Ast *expr) {
             // 3. Free the args array
             free(args);
             
+            return result;
+        }
+
+        case AST_BINOP: {
+            Value left = eval_expr(expr->binop.left);
+            Value right = eval_expr(expr->binop.right);
+            Value result;
+            
+            int op = expr->binop.op;
+
+            if (left.tag == V_STRING || right.tag == V_STRING) {
+                if (left.tag != V_STRING || right.tag != V_STRING) {
+                     runtime_error("Operator %d requires both operands to be strings, or neither.", op);
+                }
+                
+                if (op == PLUS) {
+                    const char *l = left.u.sval;
+                    const char *r = right.u.sval;
+                    size_t len = strlen(l) + strlen(r);
+                    char *new_s = malloc(len + 1);
+                    if (!new_s) runtime_error("Failed to allocate for string concatenation");
+                    strcpy(new_s, l);
+                    strcat(new_s, r);
+                    
+                    result.tag = V_STRING;
+                    result.u.sval = new_s;
+                } else if (op == EQ) {
+                    result.tag = V_INT;
+                    result.u.ival = (strcmp(left.u.sval, right.u.sval) == 0);
+                } else if (op == NEQ) {
+                    result.tag = V_INT;
+                    result.u.ival = (strcmp(left.u.sval, right.u.sval) != 0);
+                } else {
+                    runtime_error("Operator %d not supported for string types", op);
+                }
+            }
+            else if (left.tag == V_FLOAT || right.tag == V_FLOAT) {
+                double l = value_to_float(left); 
+                double r = value_to_float(right);
+
+                switch (op) {
+                    case PLUS:  result.tag = V_FLOAT; result.u.fval = l + r; break;
+                    case MINUS: result.tag = V_FLOAT; result.u.fval = l - r; break;
+                    case MUL:   result.tag = V_FLOAT; result.u.fval = l * r; break;
+                    case DIV:
+                        if (r == 0.0) runtime_error("Division by zero");
+                        result.tag = V_FLOAT; result.u.fval = l / r; break;
+                    
+                    case EQ:  result.tag = V_INT; result.u.ival = (l == r); break;
+                    case NEQ: result.tag = V_INT; result.u.ival = (l != r); break;
+                    case GT:  result.tag = V_INT; result.u.ival = (l > r); break;
+                    case LT:  result.tag = V_INT; result.u.ival = (l < r); break;
+                    case GE:  result.tag = V_INT; result.u.ival = (l >= r); break;
+                    case LE:  result.tag = V_INT; result.u.ival = (l <= r); break;
+
+                    case MOD:
+                        runtime_error("Modulo operator (%%) not supported for floats");
+                        break;
+                    default:
+                        runtime_error("Unknown binary operator %d for floats", op);
+                }
+            }
+            else if (left.tag == V_INT && right.tag == V_INT) {
+                int l = left.u.ival;
+                int r = right.u.ival;
+                result.tag = V_INT;
+
+                switch (op) {
+                    case PLUS:  result.u.ival = l + r; break;
+                    case MINUS: result.u.ival = l - r; break;
+                    case MUL:   result.u.ival = l * r; break;
+                    case DIV:
+                        if (r == 0) runtime_error("Division by zero");
+                        result.u.ival = l / r; break;
+                    case MOD:
+                        if (r == 0) runtime_error("Modulo by zero");
+                        result.u.ival = l % r; break;
+                    case EQ:  result.u.ival = (l == r); break;
+                    case NEQ: result.u.ival = (l != r); break;
+                    case GT:  result.u.ival = (l > r); break;
+                    case LT:  result.u.ival = (l < r); break;
+                    case GE:  result.u.ival = (l >= r); break;
+                    case LE:  result.u.ival = (l <= r); break;
+
+                    default:
+                        runtime_error("Unknown binary operator %d for ints", op);
+                }
+            }
+            else {
+                runtime_error("Binary operator %d not supported for types %d and %d", op, left.tag, right.tag);
+            }
+            free_value(left);
+            free_value(right);
             return result;
         }
 

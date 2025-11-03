@@ -32,6 +32,7 @@ typedef enum {
     AST_STRING_LIT, 
     AST_DECL, 
     AST_TYPE,
+    AST_BINOP,
 } AstType;
 
 typedef struct Ast {
@@ -57,6 +58,7 @@ typedef struct Ast {
         struct { double num; } number;
         struct { char *str; } string;
         struct { char *str; } ident;
+        struct { struct Ast *left; int op; struct Ast *right; } binop;
     };
 } Ast;
 
@@ -86,6 +88,7 @@ Ast *make_number(double val);
 Ast *make_string(char *s);
 Ast *make_ident(char *name);
 Ast *clone_ast(Ast *ast);
+Ast *make_binop(struct Ast *left, int op, struct Ast *right);
 
 // Utility
 void free_ast(Ast *ast);

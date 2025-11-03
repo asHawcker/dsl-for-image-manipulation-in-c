@@ -214,6 +214,16 @@ Ast *make_ident(char *name) {
     return ast;
 }
 
+Ast *make_binop(struct Ast *left, int op, struct Ast *right) {
+    Ast *ast = malloc(sizeof(Ast));
+    if (!ast) return NULL;
+    ast->type = AST_BINOP;
+    ast->binop.left = left;
+    ast->binop.op = op;
+    ast->binop.right = right;
+    return ast;
+}
+
 // Deep clone AST node and children
 Ast *clone_ast(Ast *ast) {
     if (!ast) return NULL;
@@ -428,6 +438,10 @@ void free_ast(Ast *ast) {
         case AST_IDENT: 
             free(ast->ident.str); 
             break;
+        case AST_BINOP:
+            free_ast(ast->binop.left);
+            free_ast(ast->binop.right);
+            break;
         default: 
             break;
     }
@@ -539,6 +553,11 @@ void dump_ast(Ast *ast, int indent) {
             break;
         case AST_IDENT: 
             printf("Ident: %s\n", ast->ident.str); 
+            break;
+        case AST_BINOP:
+            printf("BinOp: (op code %d)\n", ast->binop.op);
+            dump_ast(ast->binop.left, indent+1);
+            dump_ast(ast->binop.right, indent+1);
             break;
         default: 
             printf("Unknown node\n"); 

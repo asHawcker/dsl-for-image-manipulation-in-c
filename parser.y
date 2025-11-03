@@ -35,7 +35,10 @@ void yyerror(const char *s) { fprintf(stderr,"Error: %s\n",s); }
 %token <str> STR_LIT
 
 /* --- END TOKEN DECLARATIONS --- */
-
+%left PLUS MINUS
+%left MUL DIV MOD
+%left GT LT GE LE
+%left EQ NEQ
 
 %left PIPE_OP  /* Left-associative precedence for pipelines */
 %left ','      /* Left-associative for argument lists */
@@ -121,17 +124,30 @@ assignment:
 /* 'expr' is for operators (like pipe) */
 expr:
       primary_expr { $$ = $1; }
+    | expr PLUS expr    { $$ = make_binop($1, PLUS, $3); }
+    | expr MINUS expr   { $$ = make_binop($1, MINUS, $3); }
+    | expr MUL expr     { $$ = make_binop($1, MUL, $3); }
+    | expr DIV expr     { $$ = make_binop($1, DIV, $3); }
+    | expr MOD expr     { $$ = make_binop($1, MOD, $3); }
+    | expr EQ expr      { $$ = make_binop($1, EQ, $3); }
+    | expr NEQ expr     { $$ = make_binop($1, NEQ, $3); }
+    | expr GT expr      { $$ = make_binop($1, GT, $3); }
+    | expr LT expr      { $$ = make_binop($1, LT, $3); }
+    | expr GE expr      { $$ = make_binop($1, GE, $3); }
+    | expr LE expr      { $$ = make_binop($1, LE, $3); }
     | expr PIPE_OP primary_expr { $$ = make_pipe($1, $3); }
     ;
 
 /* 'primary_expr' is for terminals and calls */
 primary_expr:
-      INT_LIT   { $$ = make_int_literal($1); }    /* <-- ADDED from example */
-    | FLOAT_LIT { $$ = make_float_literal($1); }  /* <-- ADDED from example */
-    | STR_LIT   { $$ = make_string_literal($1); }  /* <-- ADDED from example */
-    | IDENT     { $$ = make_ident($1); }     /* <-- FIXED: was make_ident_node */
+      INT_LIT   { $$ = make_int_literal($1); }
+    | FLOAT_LIT { $$ = make_float_literal($1); }
+    | STR_LIT   { $$ = make_string_literal($1); }
+    | IDENT     { $$ = make_ident($1); }
     | call      { $$ = $1; }
-    /* Removed obsolete NUMBER and STRING rules */
+    | '(' expr ')' { $$ = $2; }
+    | TRUE      { $$ = make_int_literal($1); }
+    | FALSE     { $$ = make_int_literal($1); }
     ;
 
 /* --- END EXPRESSION RULES --- */
