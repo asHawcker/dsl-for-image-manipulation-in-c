@@ -1,0 +1,9 @@
+int a = 100;
+if (a < 50) {
+  print("Low");
+} else if (a < 100) {
+  print("Medium");
+} else {
+  load("input.png") |> crop(100, 100, 200, 200) |> save("ladder.png");
+  print("High crop done!");
+}
