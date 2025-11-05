@@ -1,6 +1,6 @@
 #include "ast.h"
-#include "runtime.h"
-#include "eval.h" // <-- This header will have env_shutdown()
+#include "codegen.h" 
+#include "optimize.h" // <-- NEW: Include the optimizer
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,13 +11,15 @@ extern FILE *yyin;
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        printf("Usage: %s <script.iml> [--dump-ast]\n", argv[0]);
+        printf("Usage: %s <script.iml>\n", argv[0]);
         return 1;
     }
-    int dump = 0;
-    if (argc > 2 && strcmp(argv[2], "--dump-ast") == 0) dump = 1;
-
-    yyin = fopen(argv[1], "r");
+    const char *input_file = argv[1];
+    const char *output_c_file = "generated_code.c";
+    const char *output_bin_file = "a.out"; // Changed to a.out
+    
+    // 1. Parsing (IML Source -> AST)
+    yyin = fopen(input_file, "r");
     if (!yyin) {
         perror("fopen");
         return 1;
@@ -25,21 +27,44 @@ int main(int argc, char **argv) {
 
     if (yyparse() != 0) {
         printf("Parse failed\n");
+        fclose(yyin);
         return 1;
     }
     fclose(yyin);
 
-    if (dump) dump_ast(root, 0);
+    // 2. OPTIMIZATION (AST -> Optimized AST)
+    printf("Optimizing AST...\n");
+    root = optimize_ast(root); // Perform the crucial inline and simplification step
 
-    // No runtime_init() is needed as globals start as NULL
+    // 3. Code Generation (Optimized AST -> C Source)
+    printf("Compiling: Generating clean C code to %s...\n", output_c_file);
+    codegen_program(root, output_c_file);
+
+    // 4. C Compilation (C Source + Runtime -> Executable)
+    char compile_command[512];
+    sprintf(compile_command, "gcc -o %s %s runtime.c -O2 -lm -Wall -I.", 
+            output_bin_file, output_c_file);
+            
+    printf("Compiling: Executing C compiler: %s\n", compile_command);
+    if (system(compile_command) != 0) {
+        fprintf(stderr, "C compilation failed! Check generated_code.c for errors.\n");
+        free_ast(root);
+        return 1;
+    }
+     /*
+    // 5. Execution (Executable Run)
+    printf("Execution: Running compiled program...\n");
+    char execute_command[128];
+    sprintf(execute_command, "./%s", output_bin_file);
+    if (system(execute_command) != 0) {
+        fprintf(stderr, "Execution of %s failed.\n", output_bin_file);
+        free_ast(root);
+        return 1;
+    }
+        */
     
-    eval_program(root);
-
-    // --- ADDED SHUTDOWN ---
-    // Clean up the global environment and free any remaining Values
-    env_shutdown(); 
-    // --- END ADDED SHUTDOWN ---
-
+    printf("Success! Program finished.\n");
+    
     free_ast(root);
     return 0;
 }
