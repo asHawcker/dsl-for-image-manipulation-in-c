@@ -18,14 +18,13 @@ Image *load_image(const char *filename) {
         fprintf(stderr, "Error: Memory allocation failed in load_image\n");
         return NULL;
     }
-    // Force 3 channels (RGB) to ensure color
     img->data = stbi_load(filename, &img->width, &img->height, &img->channels, 3);
     if (!img->data) {
         fprintf(stderr, "Error: Failed to load image %s\n", filename);
         free(img);
         return NULL;
     }
-    img->channels = 3; // Explicitly set to RGB
+    img->channels = 3;
     return img;
 }
 
@@ -35,7 +34,6 @@ void save_image(const char *filename, Image *img) {
                 (void*)filename, (void*)img, img ? (void*)img->data : NULL);
         return;
     }
-    // Explicitly use 3 channels for PNG
     stbi_write_png(filename, img->width, img->height, 3, img->data, img->width * 3);
 }
 
@@ -57,7 +55,7 @@ Image *crop_image(Image *img, int x, int y, int w, int h) {
     }
     out->width = w;
     out->height = h;
-    out->channels = 3;  // Force RGB
+    out->channels = 3; 
     size_t row_size = w * out->channels;
     out->data = malloc(h * row_size);
     if (!out->data) {
@@ -65,7 +63,6 @@ Image *crop_image(Image *img, int x, int y, int w, int h) {
         free(out);
         return NULL;
     }
-    // Initialize output to zero to avoid garbage
     memset(out->data, 0, h * row_size);
     for (int i = 0; i < h; i++) {
         size_t src_offset = ((y + i) * img->width + x) * img->channels;
@@ -75,7 +72,6 @@ Image *crop_image(Image *img, int x, int y, int w, int h) {
     return out;
 }
 
-// Simple box blur
 Image *blur_image(Image *img, int radius) {
     if (!img || !img->data || radius < 1) {
         fprintf(stderr, "Error: Invalid blur parameters (img=%p, data=%p, radius=%d)\n",
@@ -132,7 +128,6 @@ Image *grayscale_image(Image *img) {
         return NULL;
     }
 
-    // Allocate new image struct
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in grayscale_image\n");
@@ -140,7 +135,7 @@ Image *grayscale_image(Image *img) {
     }
     out->width = img->width;
     out->height = img->height;
-    out->channels = 3; // Keep 3 channels
+    out->channels = 3; 
     size_t data_size = img->width * img->height * 3;
     out->data = malloc(data_size);
     if (!out->data) {
@@ -149,21 +144,16 @@ Image *grayscale_image(Image *img) {
         return NULL;
     }
 
-    // Process each pixel
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
-            // Get pointers to source and destination pixels
             unsigned char *p = img->data + (y * img->width + x) * 3;
             unsigned char *q = out->data + (y * img->width + x) * 3;
 
-            // Use integer math for luminance calculation (avoids floats)
-            // Y = (299*R + 587*G + 114*B) / 1000
             int r = p[0];
             int g = p[1];
             int b = p[2];
             unsigned char gray = (unsigned char)((299 * r + 587 * g + 114 * b) / 1000);
 
-            // Set R, G, and B to the same grayscale value
             q[0] = gray;
             q[1] = gray;
             q[2] = gray;
@@ -178,7 +168,6 @@ Image *invert_image(Image *img) {
         return NULL;
     }
 
-    // Allocate new image struct
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in invert_image\n");
@@ -195,7 +184,6 @@ Image *invert_image(Image *img) {
         return NULL;
     }
 
-    // Process each byte (R, G, and B components)
     for (size_t i = 0; i < data_size; i++) {
         out->data[i] = 255 - img->data[i];
     }
@@ -208,7 +196,6 @@ Image *flip_image_along_X(Image *img) {
         return NULL;
     }
 
-    // Allocate new image struct
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in flip_image_vertical\n");
@@ -225,11 +212,9 @@ Image *flip_image_along_X(Image *img) {
         return NULL;
     }
 
-    // Copy rows from source to destination in reverse order
     for (int y = 0; y < img->height; y++) {
-        int src_y = (img->height - 1) - y; // Source row (from bottom up)
-        int dst_y = y;                     // Destination row (from top down)
-
+        int src_y = (img->height - 1) - y; 
+        int dst_y = y;                     
         unsigned char *src_row_ptr = img->data + (src_y * row_size);
         unsigned char *dst_row_ptr = out->data + (dst_y * row_size);
 
@@ -244,7 +229,6 @@ Image *flip_image_along_Y(Image *img) {
         return NULL;
     }
 
-    // Allocate new image struct
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in flip_image_horizontal\n");
@@ -260,19 +244,14 @@ Image *flip_image_along_Y(Image *img) {
         free(out);
         return NULL;
     }
-
-    // Process each row
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
-            // Find source and destination pixel locations
-            int src_x = (img->width - 1) - x; // Source pixel (from right)
-            int dst_x = x;                     // Destination pixel (from left)
+            int src_x = (img->width - 1) - x; 
+            int dst_x = x;                    
 
-            // Get pointers to source and destination pixels
             unsigned char *src_ptr = img->data + (y * img->width + src_x) * 3;
             unsigned char *dst_ptr = out->data + (y * img->width + dst_x) * 3;
 
-            // Copy the 3 bytes (R, G, B)
             memcpy(dst_ptr, src_ptr, 3);
         }
     }
@@ -290,7 +269,6 @@ Image *adjust_brightness(Image *img, int bias, int direction) {
         return NULL;
     }
 
-    // Allocate new image struct
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in adjust_brightness\n");
@@ -298,7 +276,7 @@ Image *adjust_brightness(Image *img, int bias, int direction) {
     }
     out->width = img->width;
     out->height = img->height;
-    out->channels = 3; // Force 3 channels
+    out->channels = 3; 
     size_t data_size = (size_t)img->width * img->height * 3;
     out->data = malloc(data_size);
     if (!out->data) {
@@ -307,15 +285,11 @@ Image *adjust_brightness(Image *img, int bias, int direction) {
         return NULL;
     }
 
-    // Determine the actual value to add (-bias or +bias)
     int final_bias = (direction == 1) ? bias : -bias;
 
-    // Process every byte (R, G, and B channels)
     for (size_t i = 0; i < data_size; i++) {
-        // Calculate new value
         int new_val = (int)img->data[i] + final_bias;
 
-        // Clamp the value to the valid 0-255 range
         if (new_val < 0) {
             out->data[i] = 0;
         } else if (new_val > 255) {
@@ -329,18 +303,7 @@ Image *adjust_brightness(Image *img, int bias, int direction) {
 }
 
 
-/**
- * @brief Adjusts the contrast of an image.
- *
- * Implements contrast adjustment using the formula:
- * New = Factor * (Old - 128) + 128
- * The factor is derived from the amount and direction.
- *
- * @param img The source Image.
- * @param amount The amount to adjust (0-100).
- * @param direction 1 to increase contrast, 0 to reduce contrast.
- * @return A new, contrast-adjusted Image, or NULL on failure.
- */
+
 
 Image *adjust_contrast(Image *img, int amount, int direction) {
     if (!img || !img->data) {
@@ -351,7 +314,6 @@ Image *adjust_contrast(Image *img, int amount, int direction) {
     if (amount < 0) amount = 0;
     if (amount > 100) amount = 100;
 
-    // Allocate new image space
     Image *out = malloc(sizeof(Image));
     if (!out) {
         fprintf(stderr, "Error: Memory allocation failed in adjust_contrast\n");
@@ -359,7 +321,7 @@ Image *adjust_contrast(Image *img, int amount, int direction) {
     }
     out->width = img->width;
     out->height = img->height;
-    out->channels = 3; // Force 3 channels
+    out->channels = 3; 
     size_t data_size = (size_t)img->width * img->height * 3;
     out->data = malloc(data_size);
     if (!out->data) {
@@ -368,7 +330,6 @@ Image *adjust_contrast(Image *img, int amount, int direction) {
         return NULL;
     }
 
-    // Calculate the contrast factor
     float factor;
     if (direction == 1) {
         factor = 1.0f + (float)amount / 100.0f;
@@ -376,13 +337,10 @@ Image *adjust_contrast(Image *img, int amount, int direction) {
         factor = 1.0f - (float)amount / 100.0f;
     }
 
-    // Process R, G, and B channels
     for (size_t i = 0; i < data_size; i++) {
         float old_val = (float)img->data[i];
         
-        //contrast formula
         float new_val_f = (factor * (old_val - 128.0f)) + 128.0f;
-        // Clamp the value to the valid 0-255 range
         if (new_val_f < 0.0f) {
             out->data[i] = 0;
         } else if (new_val_f > 255.0f) {
@@ -395,18 +353,7 @@ Image *adjust_contrast(Image *img, int amount, int direction) {
     return out;
 }
 
-/**
- * @brief Applies a binary threshold to an image.
- *
- * The function first converts the image to grayscale.
- * Then, it sets pixel values to 0 (black) or 255 (white)
- * based on the threshold and direction.
- *
- * @param img The source Image.
- * @param threshold The threshold value (0-255).
- * @param direction 1: (val > thresh) ? 255 : 0.  0: (val > thresh) ? 0 : 255.
- * @return A new, binary (but 3-channel) Image, or NULL on failure.
- */
+
 Image *apply_threshold(Image *img, int threshold, int direction) {
     if (!img || !img->data) {
         fprintf(stderr, "Error: Invalid image in apply_threshold\n");
@@ -463,22 +410,13 @@ Image *apply_threshold(Image *img, int threshold, int direction) {
     return out;
 }
 
-/**
- * @brief Helper to clamp a float value to the 0-255 byte range.
- */
 static inline unsigned char clamp_pixel(float v) {
     if (v < 0.0f) return 0;
     if (v > 255.0f) return 255;
     return (unsigned char)v;
 }
 
-/**
- * @brief Applies a 3x3 convolution kernel to an image.
- *
- * @param img The source Image.
- * @param kernel A 3x3 float kernel.
- * @return A new, convolved Image, or NULL on failure.
- */
+
 Image *convolve_image(Image *img, float kernel[3][3]) {
     if (!img || !img->data) {
         fprintf(stderr, "Error: Invalid image in convolve_image\n");
@@ -507,14 +445,12 @@ Image *convolve_image(Image *img, float kernel[3][3]) {
         for (int x = 0; x < w; x++) {
             float sum_r = 0.0f, sum_g = 0.0f, sum_b = 0.0f;
 
-            // for borders
             if (y == 0 || y == h - 1 || x == 0 || x == w - 1) {
                 unsigned char *p = img->data + (y * w + x) * c;
                 sum_r = p[0];
                 sum_g = p[1];
                 sum_b = p[2];
             } else {
-                // Apply 3x3 kernel
                 for (int ky = -1; ky <= 1; ky++) {
                     for (int kx = -1; kx <= 1; kx++) {
                         unsigned char *p = img->data + ((y + ky) * w + (x + kx)) * c;
@@ -534,19 +470,6 @@ Image *convolve_image(Image *img, float kernel[3][3]) {
     return out;
 }
 
-/**
- * @brief Sharpens or softens an image.
- *
- * direction = 1 (Sharpen): Applies a 3x3 sharpen kernel. 'amount' controls
- * the strength (recommended 1-10).
- * direction = 0 (Soften):  Applies a box blur. 'amount' is used as the
- * blur radius.
- *
- * @param img The source Image.
- * @param amount The strength (for sharpen) or radius (for soften).
- * @param direction 1 to sharpen, 0 to soften/blur.
- * @return A new, processed Image, or NULL on failure.
- */
 Image *sharpen_image(Image *img, int amount, int direction) {
     if (!img || !img->data) {
         fprintf(stderr, "Error: Invalid image in sharpen_image\n");
@@ -569,17 +492,6 @@ Image *sharpen_image(Image *img, int amount, int direction) {
 }
 
 
-/**
- * @brief Blends two images together using a specified alpha.
- *
- * The images must have the same dimensions.
- * The blend formula is: out = img1 * (1.0 - alpha) + img2 * alpha
- *
- * @param img1 The first source Image (visible at alpha=0.0).
- * @param img2 The second source Image (visible at alpha=1.0).
- * @param alpha The blend factor (0.0 to 1.0).
- * @return A new, blended Image, or NULL on failure.
- */
 Image *blend_images(Image *img1, Image *img2, float alpha) {
     if (!img1 || !img1->data || !img2 || !img2->data) {
         fprintf(stderr, "Error: Invalid image(s) in blend_images\n");
@@ -592,7 +504,6 @@ Image *blend_images(Image *img1, Image *img2, float alpha) {
         return NULL;
     }
 
-    // Clamp alpha
     if (alpha < 0.0f) alpha = 0.0f;
     if (alpha > 1.0f) alpha = 1.0f;
 
@@ -618,7 +529,6 @@ Image *blend_images(Image *img1, Image *img2, float alpha) {
     unsigned char *q = out->data;
 
     for (size_t i = 0; i < data_size; i++) {
-        // Apply blend formula to each component
         float val = (p1[i] * alpha_neg) + (p2[i] * alpha);
         q[i] = clamp_pixel(val);
     }
@@ -627,18 +537,6 @@ Image *blend_images(Image *img1, Image *img2, float alpha) {
 }
 
 
-/**
- * @brief Applies a binary mask to an image.
- *
- * The images must have the same dimensions.
- * The output pixel will be:
- * - Copied from img if the corresponding mask pixel is "on" (non-black).
- * - Black if the corresponding mask pixel is "off" (black).
- *
- * @param img The source Image to be masked.
- * @param mask The binary mask Image (assumed to be 3-channel grayscale, 0 or 255).
- * @return A new, masked Image, or NULL on failure.
- */
 Image *mask_image(Image *img, Image *mask) {
     if (!img || !img->data || !mask || !mask->data) {
         fprintf(stderr, "Error: Invalid image(s) in mask_image\n");
@@ -690,14 +588,6 @@ Image *mask_image(Image *img, Image *mask) {
 }
 
 
-/**
- * @brief Resizes an image using the nearest-neighbor algorithm.
- *
- * @param img The source Image to resize.
- * @param new_w The target width.
- * @param new_h The target height.
- * @return A new, resized Image, or NULL on failure.
- */
 Image *resize_image_nearest(Image *img, int new_w, int new_h) {
     if (!img || !img->data || new_w <= 0 || new_h <= 0) {
         fprintf(stderr, "Error: Invalid parameters in resize_image_nearest (img=%p, data=%p, w=%d, h=%d)\n",
@@ -761,16 +651,7 @@ Image *scale_image_factor(Image *img, float factor) {
     return resize_image_nearest(img, w_out, h_out);
 }
 
-/**
- * @brief Rotates an image by 90 degrees left or right.
- *
- * This is much faster than the general-purpose rotate.
- * Note: The output image will have its width and height swapped.
- *
- * @param img The source image.
- * @param direction 1 for 90-degrees clockwise (right), -1 for 90-degrees counter-clockwise (left).
- * @return A new, rotated Image, or NULL on failure.
- */
+
 Image *rotate_image_90(Image *img, int direction) {
     if (!img || !img->data) {
         fprintf(stderr, "Error: Invalid image in rotate_image_90\n");
@@ -837,7 +718,6 @@ Image *rotate_image_90(Image *img, int direction) {
     return out;
 }
 
-// Helper function to print a string while interpreting basic escape sequences
 void print_string_escaped(const char *s) {
     if (!s) return;
 

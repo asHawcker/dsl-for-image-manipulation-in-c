@@ -6,9 +6,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-// --- Cleanup Setup ---
-
-// Global List to track all variable names (for hoisting)
 typedef struct VarEntry {
     char *name;
     TypeId type; 
@@ -17,12 +14,10 @@ typedef struct VarEntry {
 
 static VarEntry *var_list = NULL; 
 
-// A buffer to hold the logic code until declarations are written
 static char *code_buffer = NULL;
 static size_t buffer_size = 0;
 static size_t buffer_used = 0;
 
-// Internal fprintf equivalent that writes to the buffer
 static void buffer_printf(const char *format, ...) {
     va_list args;
     
@@ -54,7 +49,6 @@ static void buffer_printf(const char *format, ...) {
     }
 }
 
-// Function to convert TypeId (AST type) to its C keyword string
 const char* type_to_c_string(TypeId t) {
     switch (t) {
         case TYPE_INT: return "int";
@@ -65,7 +59,6 @@ const char* type_to_c_string(TypeId t) {
     }
 }
 
-// Helper to register variables used in the IML script
 void register_var(const char *name, TypeId t) {
     VarEntry *current = var_list;
     while(current) {
@@ -82,10 +75,9 @@ void register_var(const char *name, TypeId t) {
     var_list = new_var;
 }
 
-// Forward declarations
 void codegen_stmt(Ast *stmt);
 void codegen_block(Ast *block);
-void codegen_expr(Ast *expr); // Returns void now, prints inline C code directly
+void codegen_expr(Ast *expr); 
 
 void write_indent(int indent) {
     buffer_printf("\n");
@@ -94,7 +86,6 @@ void write_indent(int indent) {
     }
 }
 
-// MAPPING FUNCTION (Fixes linker errors)
 const char* map_iml_to_c_func(const char *iml_name) {
     if (strcmp(iml_name, "load") == 0) return "load_image";
     if (strcmp(iml_name, "save") == 0) return "save_image";
@@ -116,14 +107,10 @@ const char* map_iml_to_c_func(const char *iml_name) {
     return iml_name; 
 }
 
-
-// Determines if a function returns VOID (for statement vs. expression generation)
 int is_void_func(const char *fname) {
     return strcmp(fname, "save") == 0 || strcmp(fname, "print") == 0;
 }
 
-
-// The expression generator now writes C code directly without generating temps
 void codegen_expr(Ast *expr) {
     if (!expr) {
         buffer_printf("NULL");
@@ -160,7 +147,6 @@ void codegen_expr(Ast *expr) {
         }
 
         case AST_BINOP: {
-            // Add parentheses for safety since we lost precedence info in AST
             buffer_printf("(");
             codegen_expr(expr->binop.left);
             
@@ -185,16 +171,13 @@ void codegen_expr(Ast *expr) {
             buffer_printf(")");
             break;
         }
-        
-        // AST_PIPELINE is handled by the optimizer, so it won't appear here!
-        // The optimizer rewrites AST_PIPELINE into AST_CALL.
+    
         
         default:
             buffer_printf("/* ERROR: Unknown expression type %d */", expr->type);
     }
 }
 
-// --- Statement Code Generation ---
 
 void codegen_stmt(Ast *stmt) {
     if (!stmt) return;
@@ -220,7 +203,6 @@ void codegen_stmt(Ast *stmt) {
         }
 
         case AST_EXPR_STMT: {
-            // If the expression is a VOID function, print the whole call as a statement
             if (stmt->expr_stmt.expr->type == AST_CALL) {
                 if (is_void_func(stmt->expr_stmt.expr->call.name)) {
                     codegen_expr(stmt->expr_stmt.expr);
@@ -229,7 +211,6 @@ void codegen_stmt(Ast *stmt) {
                 }
             }
             
-            // Otherwise, it's a statement with a value result (which is fine, just ignore the result)
             codegen_expr(stmt->expr_stmt.expr);
             buffer_printf("; /* result ignored */");
             break;
@@ -252,9 +233,6 @@ void codegen_block(Ast *block) {
     }
 }
 
-
-// --- Main Code Generator Entry Point ---
-
 void codegen_program(Ast *prog, const char *output_c_filename) {
     FILE *outfile = fopen(output_c_filename, "w");
     if (!outfile) {
@@ -262,19 +240,15 @@ void codegen_program(Ast *prog, const char *output_c_filename) {
         exit(1);
     }
     
-    // 1. Traverse AST to populate var_list and write logic code to buffer
     codegen_block(prog); 
     
-    // 2. Write C Includes and Boilerplate
     fprintf(outfile, "/* Generated C code from IML Compiler */\n\n");
     fprintf(outfile, "#include \"runtime.h\"\n");
     fprintf(outfile, "#include <stdio.h>\n");
     fprintf(outfile, "#include <stdlib.h>\n\n");
     
-    // 3. Start main function
     fprintf(outfile, "int main() {\n");
-    
-    // 4. Hoisted Declarations 
+
     fprintf(outfile, "\n    // Variable Declarations (Hoisted from IML script)\n");
     VarEntry *current = var_list;
     while(current) {
@@ -282,16 +256,13 @@ void codegen_program(Ast *prog, const char *output_c_filename) {
             type_to_c_string(current->type), 
             current->name, 
             (current->type == TYPE_IMAGE || current->type == TYPE_STRING) ? " = NULL" : ""); 
-        
-        // Cleanup of the VarEntry nodes
+
         VarEntry *temp = current;
         current = current->next;
         free(temp->name);
         free(temp); 
     }
     var_list = NULL; 
-
-    // 5. Write the buffered Program Logic
     fprintf(outfile, "\n    // Program Logic\n");
     if (code_buffer) {
         fprintf(outfile, "%s\n", code_buffer);
@@ -299,9 +270,8 @@ void codegen_program(Ast *prog, const char *output_c_filename) {
         code_buffer = NULL;
     }
 
-    // 6. End main function
     fprintf(outfile, "\n\n    return 0;\n");
     fprintf(outfile, "}\n");
     
     fclose(outfile);
-}
+}   
