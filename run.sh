@@ -14,7 +14,7 @@ SCRIPT="${1:-$DEFAULT_SCRIPT}"
 echo "Building IML Compiler..."
 bison -d parser.y
 flex lexer.l
-gcc -o iml parser.tab.c lex.yy.c ast.c codegen.c eval.c main.c runtime.c optimize.c -lm -Wall 
+gcc -o iml parser.tab.c lex.yy.c ast.c codegen.c eval.c main.c runtime.c -lm -Wall 
 
 if [ $? -ne 0 ]; then
     echo "Build failed! (Failed to create the 'iml' compiler executable)"
